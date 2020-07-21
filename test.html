@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <button onclick="throttleFn()" id="btn">按钮</button>
+  </div>
+
+  <script>
+    const throttle = function (fn) {
+      let timer = null;
+      return function () {
+        if (timer) {
+          return
+        } else {
+          timer = setTimeout(() => {
+            fn.call(this, arguments);
+            timer = null;
+          }, 1000);
+        }
+      }
+    }
+
+    const throttleD = function (fn) {
+      let beforeDate = null;
+      return function () {
+        const currentDate = Date.now();
+        if (!beforeDate || currentDate - beforeDate > 1000) {
+          fn.call(this, arguments);
+          beforeDate = currentDate;
+        }
+      }
+    }
+    function fn(e) {
+      const phoneReg = /^[1]\w{10}$/
+      console.log(phoneReg.test('13181104657'));
+    }
+    const throttleFn = throttleD(fn);
+    function cb(data) {
+      document.querySelector('#btn').innerHTML = data;
+    }
+  </script>
+  <script src="http://127.0.0.1:8081/?a=1&cb=cb"></script>
+</body>
+
+</html>

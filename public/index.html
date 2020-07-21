@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="../dist/vue.js"></script>
+  <script>
+    const vm = new Vue({
+      el: "#app",
+      data() { // data里面的数据会被观测，对数据更新会更新视图
+        return {
+          object: {
+            msg1: 'kilic',
+            obj2: "mu",
+          },
+          array: [ "a", "b", { 'oa': 1, 'ob': 2 } ]
+        }
+      },
+      template: `
+      <div class="div-btn" style="color: blue">
+        <span>hello {{object.msg1}}</span>
+        <ul class="list" style="color:red; backgroundColor: green;">
+          <li>{{object.obj2}}</li>
+          <li>{{object.obj2}}</li>
+          <li></li>
+          <li></li>
+        </ul>
+      </div>`
+    })
+    setTimeout(() => {
+      vm.object.msg1 = "koko";
+      console.log(vm.object);
+    }, 2000);
+  </script>
+</body>
+
+</html>
