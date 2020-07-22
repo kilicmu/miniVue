@@ -1,6 +1,7 @@
 import { initState } from "./state"
 import { compileToFunction } from "./compiler/index";
 import { mountComponent } from "./lifecycle"
+import { initGlobalAPI } from "./global-api/index"
 
 
 export function initMixin (Vue) {
