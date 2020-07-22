@@ -1,16 +1,19 @@
 import { initState } from "./state"
 import { compileToFunction } from "./compiler/index";
-import { mountComponent } from "./lifecycle"
+import { callHook, mountComponent } from "./lifecycle"
 import { initGlobalAPI } from "./global-api/index"
+import { mergeOptions } from "./utils";
 
 
 export function initMixin (Vue) {
   Vue.prototype._init = function (options) {
     //Vue的内部属性#options 用户传递所以参数
     const vm = this;
-    vm.$options = options;
-
+    vm.$options = mergeOptions(vm.constructor.options, options);
+    callHook(vm, 'beforeCreate');
     initState(vm); // 初始化状态
+
+    callHook(vm, 'created');
 
     // 通过模板渲染
 

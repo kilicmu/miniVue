@@ -42,6 +42,55 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _slicedToArray(arr, i) {
     return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
   }
@@ -98,6 +147,8 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
+  var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed', 'activated', 'deactivated', 'errorCaptured', 'serverPrefetch'];
+
   function isObject(data) {
     return _typeof(data) === "object" && data !== null;
   }
@@ -110,6 +161,86 @@
         vm[source][key] = newValue;
       }
     });
+  }
+  var strategy = {};
+  LIFECYCLE_HOOKS.forEach(function (hook) {
+    strategy[hook] = mergeHook;
+  });
+
+  function mergeHook(parentVal, childVal) {
+    if (childVal) {
+      if (parentVal) {
+        return parentVal.concat(childVal);
+      } else {
+        return [childVal];
+      }
+    } else {
+      return parentVal;
+    }
+  }
+
+  function mergeOptions(parent, child) {
+    var options = {};
+
+    function mergeField(key) {
+      if (strategy[key]) {
+        return options[key] = strategy[key](parent[key], child[key]);
+      }
+
+      if (_typeof(parent[key]) === 'object' && _typeof(child[key]) === 'object') {
+        options[key] = _objectSpread2(_objectSpread2({}, parent[key]), child[key]);
+      } else if (child[key] == null) {
+        options[key] = parent[key];
+      } else {
+        options[key] = child[key];
+      }
+
+      return options;
+    }
+
+    for (var key in parent) {
+      mergeField(key);
+    }
+
+    for (var _key in child) {
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+
+    return options;
+  }
+
+  function initMixin(Vue) {
+    Vue.options = {};
+
+    Vue.mixin = function (mixin) {
+      this.options = mergeOptions(this.options, mixin);
+      return this;
+    };
+
+    Vue.mixin({
+      b: 2,
+      beforeCreate: function beforeCreate() {
+        console.log(this.object);
+      },
+      mounted: function mounted() {
+        console.log('obj', this.object);
+        console.log(this);
+      }
+    });
+    Vue.mixin({
+      a: 1,
+      beforeCreate: function beforeCreate() {
+        console.log(2);
+      }
+    });
+    console.log(Vue.options);
+  }
+
+  function initGlobalAPI(Vue) {
+    Vue.options = {};
+    initMixin(Vue);
   }
 
   var oldArrayMethods = Array.prototype;
@@ -601,6 +732,7 @@
   function mountComponent(vm, el) {
     var opts = vm.$options;
     vm.$el = el;
+    callHook(vm, 'beforeMount');
 
     var updateComponent = function updateComponent() {
       // 1. 通过_render方法生成虚拟dom
@@ -610,6 +742,7 @@
 
 
     new Watcher(vm, updateComponent, function () {}, true);
+    callHook(vm, 'mounted');
   }
   function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
@@ -618,14 +751,25 @@
       vm.$el = patch(vm.$el, vnode);
     };
   }
+  function callHook(vm, hook) {
+    var handlers = vm.$options[hook];
 
-  function initMixin(Vue) {
+    if (handlers) {
+      handlers.forEach(function (i) {
+        return i.call(vm);
+      });
+    }
+  }
+
+  function initMixin$1(Vue) {
     Vue.prototype._init = function (options) {
       //Vue的内部属性#options 用户传递所以参数
       var vm = this;
-      vm.$options = options;
+      vm.$options = mergeOptions(vm.constructor.options, options);
+      callHook(vm, 'beforeCreate');
       initState(vm); // 初始化状态
-      // 通过模板渲染
+
+      callHook(vm, 'created'); // 通过模板渲染
 
       if (vm.$options.el) {
         // 用户提供挂载节点
@@ -714,9 +858,10 @@
     this._init(options);
   }
 
-  initMixin(Vue);
+  initMixin$1(Vue);
   lifecycleMixin(Vue);
   renderMixin(Vue);
+  initGlobalAPI(Vue);
 
   return Vue;
 
