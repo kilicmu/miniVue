@@ -217,25 +217,24 @@
     Vue.mixin = function (mixin) {
       this.options = mergeOptions(this.options, mixin);
       return this;
-    };
+    }; // Vue.mixin({
+    //   b: 2,
+    //   beforeCreate () {
+    //     console.log(this.object);
+    //   },
+    //   mounted () {
+    //     console.log('obj', this.object);
+    //     console.log(this);
+    //   },
+    // });
+    // Vue.mixin({
+    //   a: 1,
+    //   beforeCreate () {
+    //     console.log(2);
+    //   },
+    // });
+    // console.log(Vue.options)
 
-    Vue.mixin({
-      b: 2,
-      beforeCreate: function beforeCreate() {
-        console.log(this.object);
-      },
-      mounted: function mounted() {
-        console.log('obj', this.object);
-        console.log(this);
-      }
-    });
-    Vue.mixin({
-      a: 1,
-      beforeCreate: function beforeCreate() {
-        console.log(2);
-      }
-    });
-    console.log(Vue.options);
   }
 
   function initGlobalAPI(Vue) {
@@ -374,7 +373,6 @@
       set: function set(newValue) {
         if (newValue === value) return;
         observe(value);
-        console.log("set value: ", newValue);
         value = newValue;
         dep.notify();
       }
@@ -643,10 +641,80 @@
     // 3. 通过ast产生的语法树，生成render函数 render（codegen）
   }
 
+  var callbacks = [];
+  var pending = false;
+  var p = Promise.resolve();
+  /**
+   * 清空callbacks
+   */
+
+  function flushCallbacks() {
+    pending = false;
+    var copies = callbacks.slice(0);
+    callbacks.length = 0;
+    copies.forEach(function (copies) {
+      copies();
+    });
+  }
+
+  function timerFunc() {
+    p.then(flushCallbacks);
+  }
+
+  function nextTick(cb, ctx) {
+    var _resolve;
+
+    callbacks.push(function () {
+      if (cb) {
+        cb.call(ctx);
+      } else if (_resolve) {
+        _resolve(ctx);
+      }
+    });
+
+    if (!pending) {
+      pending = true;
+      timerFunc();
+    }
+
+    if (!cb && typeof Promise !== 'undefined') {
+      return new Promise(function (resolve) {
+        _resolve = resolve;
+      });
+    }
+  }
+
+  var has = {};
+  var queue = [];
+
+  function flushSchedulerQueue() {
+    queue.forEach(function (watcher) {
+      watcher.run();
+    });
+    has = {};
+    queue = [];
+  }
+
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+
+    if (has[id] == null) {
+      has[id] = true;
+
+      {
+        queue.push(watcher);
+      }
+
+      nextTick(flushSchedulerQueue, 0);
+    }
+  }
+
+  var id = 0;
   var Watcher = /*#__PURE__*/function () {
     function Watcher(vm, exprOrFn, cb, options) {
       _classCallCheck(this, Watcher);
 
+      this.id = id++;
       this.vm = vm;
       this.exprOrFn = exprOrFn;
       this.cb = cb;
@@ -672,6 +740,11 @@
     }, {
       key: "update",
       value: function update() {
+        queueWatcher(this);
+      }
+    }, {
+      key: "run",
+      value: function run() {
         this.get();
       }
     }]);
@@ -735,8 +808,9 @@
     callHook(vm, 'beforeMount');
 
     var updateComponent = function updateComponent() {
-      // 1. 通过_render方法生成虚拟dom
+      console.log('update'); // 1. 通过_render方法生成虚拟dom
       // 2. _update方法通过vnode生成真实dom
+
       vm._update(vm._render());
     }; // 通过生成Watcher达成首次渲染
 

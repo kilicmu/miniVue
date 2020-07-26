@@ -49,7 +49,6 @@ function defineReactive (data, key, value) {
     set (newValue) {
       if (newValue === value) return;
       observe(value)
-      console.log("set value: ", newValue)
       value = newValue;
       dep.notify();
     }

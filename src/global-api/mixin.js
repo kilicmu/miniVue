@@ -7,23 +7,23 @@ export function initMixin (Vue) {
     return this;
   }
 
-  Vue.mixin({
-    b: 2,
-    beforeCreate () {
-      console.log(this.object);
-    },
-    mounted () {
-      console.log('obj', this.object);
-      console.log(this);
-    },
-  });
+  // Vue.mixin({
+  //   b: 2,
+  //   beforeCreate () {
+  //     console.log(this.object);
+  //   },
+  //   mounted () {
+  //     console.log('obj', this.object);
+  //     console.log(this);
+  //   },
+  // });
 
-  Vue.mixin({
-    a: 1,
-    beforeCreate () {
-      console.log(2);
-    },
-  });
+  // Vue.mixin({
+  //   a: 1,
+  //   beforeCreate () {
+  //     console.log(2);
+  //   },
+  // });
 
-  console.log(Vue.options)
+  // console.log(Vue.options)
 }
