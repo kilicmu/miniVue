@@ -5,7 +5,6 @@ export function mountComponent (vm, el) {
   vm.$el = el;
   callHook(vm, 'beforeMount');
   const updateComponent = function () {
-    console.log('update');
     // 1. 通过_render方法生成虚拟dom
     // 2. _update方法通过vnode生成真实dom
     vm._update(vm._render());

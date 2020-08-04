@@ -12,3 +12,10 @@ export const LIFECYCLE_HOOKS = [
   'errorCaptured',
   'serverPrefetch'
 ]
+
+
+export const ASSET_TYPES = [
+  'component',
+  'directive',
+  'filter'
+]

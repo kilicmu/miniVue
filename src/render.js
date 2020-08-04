@@ -3,7 +3,7 @@ export function renderMixin (Vue) {
   // 获取VNode
   // _c创建元素虚拟节点
   Vue.prototype._c = function () {
-    return createElement(...arguments);
+    return createElement(this, ...arguments);
   }
   // _a 创建文本虚拟节点
   Vue.prototype._v = function (text) {

@@ -1,18 +1,29 @@
 export function patch (oldVnode, vnode) {
-  const isRealElement = oldVnode.nodeType;
-  if (isRealElement) {
-    const oldElm = oldVnode;
-    const parentElm = oldElm.parentNode;
-    const el = createElm(vnode);
-    parentElm.insertBefore(el, oldElm);
-    parentElm.removeChild(oldElm);
-    return el;
+  if (!oldVnode) {
+    return createElm(vnode);
+  } else {
+    const isRealElement = oldVnode.nodeType;
+    if (isRealElement) {
+      const oldElm = oldVnode;
+      const parentElm = oldElm.parentNode;
+      const el = createElm(vnode);
+      parentElm.insertBefore(el, oldElm);
+      parentElm.removeChild(oldElm);
+      return el;
+    }
   }
+
 }
 
 function createElm (vnode) {
   const { tag, children, key, data, text } = vnode;
   if (typeof tag === 'string') {
+    // TODO 组件判断
+    if (createComponent(vnode)) {
+      console.log(vnode.componentInstance.$el)
+
+      return vnode.componentInstance.$el;
+    }
     vnode.el = document.createElement(tag);
     updatePrototies(vnode);
     children.forEach(child => {
@@ -22,6 +33,17 @@ function createElm (vnode) {
     vnode.el = document.createTextNode(text);
   }
   return vnode.el;
+}
+
+function createComponent (vnode) {
+  let d = vnode.data;
+  console.log(vnode)
+  if ((d = d.hooks) && (d = d.init)) {
+    d(vnode);
+  }
+  if (vnode.componentInstance) {
+    return true;
+  }
 }
 
 function updatePrototies (vnode) {

@@ -69,6 +69,7 @@ export function parseHTML (html) {
         end(endTagMatch[ 1 ]);
         advance(endTagMatch[ 0 ].length)
       }
+
     }
 
     let text;

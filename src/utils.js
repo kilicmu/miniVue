@@ -30,6 +30,16 @@ function mergeHook (parentVal, childVal) {
   }
 }
 
+strategy[ 'components' ] = function (parentVal, childVal) {
+  const res = Object.create(parentVal);
+  if (childVal) {
+    for (let key in childVal) {
+      res[ key ] = childVal;
+    }
+  }
+  return res;
+}
+
 export function mergeOptions (parent, child) {
   const options = {};
   function mergeField (key) {
@@ -60,4 +70,13 @@ export function mergeOptions (parent, child) {
   return options
 }
 
+
+export function isReservedTag (tag) {
+  const str = 'input,div,ul,li,span';
+  const obj = {}
+  str.split(',').forEach(key => {
+    obj[ key ] = true
+  })
+  return !!obj[ tag ];
+}
 

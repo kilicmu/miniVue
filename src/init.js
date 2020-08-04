@@ -3,6 +3,7 @@ import { compileToFunction } from "./compiler/index";
 import { callHook, mountComponent } from "./lifecycle"
 import { initGlobalAPI } from "./global-api/index"
 import { mergeOptions } from "./utils";
+import { nextTick } from "../utils/next-tick";
 
 
 export function initMixin (Vue) {
@@ -40,4 +41,6 @@ export function initMixin (Vue) {
     //  opts.render;
     mountComponent(vm, el);
   }
+
+  Vue.prototype.$nextTick = nextTick;
 }

@@ -4,6 +4,64 @@
   (global = global || self, global.Vue = factory());
 }(this, (function () { 'use strict';
 
+  var callbacks = [];
+  var pending = false;
+  var p = Promise.resolve();
+  /**
+   * 清空callbacks
+   */
+
+  function flushCallbacks() {
+    pending = false;
+    var copies = callbacks.slice(0);
+    callbacks.length = 0;
+    copies.forEach(function (copies) {
+      copies();
+    });
+  }
+
+  function timerFunc() {
+    p.then(flushCallbacks);
+  }
+
+  function nextTick(cb, ctx) {
+    var _resolve;
+
+    callbacks.push(function () {
+      if (cb) {
+        cb.call(ctx);
+      } else if (_resolve) {
+        _resolve(ctx);
+      }
+    });
+
+    if (!pending) {
+      pending = true;
+      timerFunc();
+    }
+
+    if (!cb && typeof Promise !== 'undefined') {
+      return new Promise(function (resolve) {
+        _resolve = resolve;
+      });
+    }
+  }
+
+  var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed', 'activated', 'deactivated', 'errorCaptured', 'serverPrefetch'];
+  var ASSET_TYPES = ['component', 'directive', 'filter'];
+
+  function initAssetRegisters(Vue) {
+    ASSET_TYPES.forEach(function (type) {
+      Vue[type] = function (id, definition) {
+        if (type === 'component') {
+          definition = this.options._base.extend(definition);
+        }
+
+        this.options[type + 's'][id] = definition;
+      };
+    });
+  }
+
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
@@ -147,8 +205,6 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed', 'activated', 'deactivated', 'errorCaptured', 'serverPrefetch'];
-
   function isObject(data) {
     return _typeof(data) === "object" && data !== null;
   }
@@ -178,6 +234,18 @@
       return parentVal;
     }
   }
+
+  strategy['components'] = function (parentVal, childVal) {
+    var res = Object.create(parentVal);
+
+    if (childVal) {
+      for (var key in childVal) {
+        res[key] = childVal;
+      }
+    }
+
+    return res;
+  };
 
   function mergeOptions(parent, child) {
     var options = {};
@@ -210,6 +278,33 @@
 
     return options;
   }
+  function isReservedTag(tag) {
+    var str = 'input,div,ul,li,span';
+    var obj = {};
+    str.split(',').forEach(function (key) {
+      obj[key] = true;
+    });
+    return !!obj[tag];
+  }
+
+  var cid = 0;
+  function initExtend(Vue) {
+    Vue.extend = function (extendOptions) {
+      var Sub = function VueComponent(options) {
+        this._init(options);
+      };
+
+      Sub.prototype = Object.create(this.prototype, {
+        constructor: {
+          value: Sub
+        }
+      });
+      Sub.cid = cid++;
+      Sub.options = mergeOptions(this.options, extendOptions);
+      console.log('sub-----', Sub.options);
+      return Sub;
+    };
+  }
 
   function initMixin(Vue) {
     Vue.options = {};
@@ -240,6 +335,12 @@
   function initGlobalAPI(Vue) {
     Vue.options = {};
     initMixin(Vue);
+    ASSET_TYPES.forEach(function (type) {
+      Vue.options[type + 's'] = {};
+    });
+    Vue.options._base = Vue;
+    initExtend(Vue);
+    initAssetRegisters(Vue);
   }
 
   var oldArrayMethods = Array.prototype;
@@ -560,6 +661,7 @@
       if (attr.name === 'style') {
         (function () {
           var obj = {};
+          console.log(attr.value);
           attr.value.split(";").forEach(function (item) {
             var _item$split = item.split(":"),
                 _item$split2 = _slicedToArray(_item$split, 2),
@@ -622,6 +724,7 @@
   }
 
   function generate(el) {
+    console.log("----el-------", el);
     var children = genChildren(el.children); // 子节点
 
     var code = "_c(\"".concat(el.tag, "\",{").concat(el.attrs.length ? genProps(el.attrs) : 'undefined', "}\n  ").concat(children ? ",".concat(children) : '', ")\n  ");
@@ -639,49 +742,6 @@
     var renderFn = new Function(code);
     return renderFn; // 2. 标记静态书 markup解析
     // 3. 通过ast产生的语法树，生成render函数 render（codegen）
-  }
-
-  var callbacks = [];
-  var pending = false;
-  var p = Promise.resolve();
-  /**
-   * 清空callbacks
-   */
-
-  function flushCallbacks() {
-    pending = false;
-    var copies = callbacks.slice(0);
-    callbacks.length = 0;
-    copies.forEach(function (copies) {
-      copies();
-    });
-  }
-
-  function timerFunc() {
-    p.then(flushCallbacks);
-  }
-
-  function nextTick(cb, ctx) {
-    var _resolve;
-
-    callbacks.push(function () {
-      if (cb) {
-        cb.call(ctx);
-      } else if (_resolve) {
-        _resolve(ctx);
-      }
-    });
-
-    if (!pending) {
-      pending = true;
-      timerFunc();
-    }
-
-    if (!cb && typeof Promise !== 'undefined') {
-      return new Promise(function (resolve) {
-        _resolve = resolve;
-      });
-    }
   }
 
   var has = {};
@@ -753,15 +813,19 @@
   }();
 
   function patch(oldVnode, vnode) {
-    var isRealElement = oldVnode.nodeType;
+    if (!oldVnode) {
+      return createElm(vnode);
+    } else {
+      var isRealElement = oldVnode.nodeType;
 
-    if (isRealElement) {
-      var oldElm = oldVnode;
-      var parentElm = oldElm.parentNode;
-      var el = createElm(vnode);
-      parentElm.insertBefore(el, oldElm);
-      parentElm.removeChild(oldElm);
-      return el;
+      if (isRealElement) {
+        var oldElm = oldVnode;
+        var parentElm = oldElm.parentNode;
+        var el = createElm(vnode);
+        parentElm.insertBefore(el, oldElm);
+        parentElm.removeChild(oldElm);
+        return el;
+      }
     }
   }
 
@@ -773,6 +837,12 @@
         text = vnode.text;
 
     if (typeof tag === 'string') {
+      // TODO 组件判断
+      if (createComponent(vnode)) {
+        console.log(vnode.componentInstance.$el);
+        return vnode.componentInstance.$el;
+      }
+
       vnode.el = document.createElement(tag);
       updatePrototies(vnode);
       children.forEach(function (child) {
@@ -783,6 +853,19 @@
     }
 
     return vnode.el;
+  }
+
+  function createComponent(vnode) {
+    var d = vnode.data;
+    console.log(vnode);
+
+    if ((d = d.hooks) && (d = d.init)) {
+      d(vnode);
+    }
+
+    if (vnode.componentInstance) {
+      return true;
+    }
   }
 
   function updatePrototies(vnode) {
@@ -808,9 +891,8 @@
     callHook(vm, 'beforeMount');
 
     var updateComponent = function updateComponent() {
-      console.log('update'); // 1. 通过_render方法生成虚拟dom
+      // 1. 通过_render方法生成虚拟dom
       // 2. _update方法通过vnode生成真实dom
-
       vm._update(vm._render());
     }; // 通过生成Watcher达成首次渲染
 
@@ -873,40 +955,69 @@
 
       mountComponent(vm, el);
     };
+
+    Vue.prototype.$nextTick = nextTick;
   }
 
-  function createElement(tag, data) {
+  function vnode(tag, data, key, children, text, componentOptions) {
+    return {
+      tag: tag,
+      data: data,
+      key: key,
+      children: children,
+      text: text,
+      componentOptions: componentOptions
+    };
+  }
+
+  function createComponent$1(vm, tag, data, key, children, Ctor) {
+    if (isObject(Ctor)) {
+      console.log(Ctor);
+      Ctor = vm.$options._base.extend(Ctor);
+    }
+
+    data.hooks = {
+      init: function init(vnode) {
+        var child = vnode.componentInstance = new Ctor({
+          _isComponent: true
+        });
+        child.$mount();
+      }
+    };
+    return vnode("vue-component-".concat(Ctor.cid, "-").concat(tag), data, key, undefined, undefined, {
+      Ctor: Ctor,
+      children: children
+    });
+  }
+
+  function createElement(vm, tag, data) {
     var key = data.key;
 
     if (key) {
       delete data[key];
     }
 
-    for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-      children[_key - 2] = arguments[_key];
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
     }
 
-    return vnode(tag, data, key, children, undefined);
+    if (isReservedTag(tag)) {
+      return vnode(tag, data, key, children, undefined);
+    } else {
+      var Ctor = vm.$options.components[tag];
+      console.log('cttor----', vm.$options.components, tag, Ctor);
+      return createComponent$1(vm, tag, data, key, children, Ctor);
+    }
   }
   function createTextNode(text) {
     return vnode(undefined, undefined, undefined, undefined, text);
-  }
-
-  function vnode(tag, data, key, children, text) {
-    return {
-      tag: tag,
-      data: data,
-      key: key,
-      children: children,
-      text: text
-    };
   }
 
   function renderMixin(Vue) {
     // 获取VNode
     // _c创建元素虚拟节点
     Vue.prototype._c = function () {
-      return createElement.apply(void 0, arguments);
+      return createElement.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
     }; // _a 创建文本虚拟节点
 
 

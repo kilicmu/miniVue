@@ -6,6 +6,7 @@ function genProps (attrs) {
     const attr = attrs[ i ];
     if (attr.name === 'style') {
       const obj = {};
+      console.log(attr.value);
       attr.value.split(";").forEach(item => {
         const [ key, value ] = item.split(":");
         obj[ key ] = value;
@@ -52,6 +53,7 @@ function gen (node) {
 }
 
 function generate (el) {
+  console.log("----el-------", el)
   const children = genChildren(el.children);// 子节点
 
   let code = `_c("${el.tag}",{${el.attrs.length ? genProps(el.attrs) : 'undefined'}}
