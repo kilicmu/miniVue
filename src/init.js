@@ -10,7 +10,9 @@ export function initMixin (Vue) {
   Vue.prototype._init = function (options) {
     //Vue的内部属性#options 用户传递所以参数
     const vm = this;
+    // console.log(vm.constructor.options, options)
     vm.$options = mergeOptions(vm.constructor.options, options);
+    // console.log('opt', vm.$options)
     callHook(vm, 'beforeCreate');
     initState(vm); // 初始化状态
 
@@ -32,9 +34,11 @@ export function initMixin (Vue) {
 
     if (!opts.render) { // 如果没有render，则编译模板
       let template = opts.template;
+      // console.log('opts---', opts);
       if (!template && el) {
         template = el.outerHTML;
       }
+      // console.log(template)
       const render = compileToFunction(template);
       opts.render = render;
     }

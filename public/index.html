@@ -41,6 +41,12 @@
           array: [ "a", "b", { 'oa': 1, 'ob': 2 } ]
         }
       },
+      components: {
+        'component1': {
+          template: `<div>component1</div>`
+        }
+      }
+      ,
       template: `
       <div class="div-btn" style="color: blue">
         <span>hello {{object.msg1}}</span>
@@ -50,15 +56,11 @@
           <li>{{array[1]}}</li>
           <li></li>
         </ul>
-        <component-test></component-test>
+        <component1></component1>
       </div>
-      `,
-      components: {
-        'component-test': {
-          template: `<div>component1</div>`
-        }
-      }
+      `
     })
+
 
     // vm.object.msg1 = 'k';
     // vm.object.msg1 = 'o';

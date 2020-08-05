@@ -31,10 +31,11 @@ function mergeHook (parentVal, childVal) {
 }
 
 strategy[ 'components' ] = function (parentVal, childVal) {
+
   const res = Object.create(parentVal);
   if (childVal) {
     for (let key in childVal) {
-      res[ key ] = childVal;
+      res[ key ] = childVal[ key ];
     }
   }
   return res;
@@ -44,6 +45,7 @@ export function mergeOptions (parent, child) {
   const options = {};
   function mergeField (key) {
     if (strategy[ key ]) {
+      // debugger
       return options[ key ] = strategy[ key ](parent[ key ], child[ key ]);
     }
     if (typeof parent[ key ] === 'object' && typeof child[ key ] === 'object') {

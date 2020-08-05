@@ -6,7 +6,6 @@ function genProps (attrs) {
     const attr = attrs[ i ];
     if (attr.name === 'style') {
       const obj = {};
-      console.log(attr.value);
       attr.value.split(";").forEach(item => {
         const [ key, value ] = item.split(":");
         obj[ key ] = value;
@@ -53,9 +52,7 @@ function gen (node) {
 }
 
 function generate (el) {
-  console.log("----el-------", el)
   const children = genChildren(el.children);// 子节点
-
   let code = `_c("${el.tag}",{${el.attrs.length ? genProps(el.attrs) : 'undefined'}}
   ${children ? `,${children}` : ''})
   `
@@ -66,7 +63,9 @@ export function compileToFunction (template) {
   // 编译模板为render函数
 
   // 1. 将代码-》ast语法树 paser解析
+  console.log(template)
   const root = parseHTML(template);
+  console.log(root);
   // console.log(root);
   // 将AST语法树生成Render函数
   let code = generate(root);

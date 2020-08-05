@@ -240,7 +240,7 @@
 
     if (childVal) {
       for (var key in childVal) {
-        res[key] = childVal;
+        res[key] = childVal[key];
       }
     }
 
@@ -252,6 +252,7 @@
 
     function mergeField(key) {
       if (strategy[key]) {
+        // debugger
         return options[key] = strategy[key](parent[key], child[key]);
       }
 
@@ -294,14 +295,10 @@
         this._init(options);
       };
 
-      Sub.prototype = Object.create(this.prototype, {
-        constructor: {
-          value: Sub
-        }
-      });
+      Sub.prototype = Object.create(this.prototype);
+      Sub.prototype.constructor = Sub;
       Sub.cid = cid++;
       Sub.options = mergeOptions(this.options, extendOptions);
-      console.log('sub-----', Sub.options);
       return Sub;
     };
   }
@@ -526,8 +523,7 @@
   var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配结尾的</div>
 
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
-  var startTagClose = /^\s*(\/?)>/;
-  var root = null; // ast语法树树根
+  var startTagClose = /^\s*(\/?)>/; // ast语法树树根
 
   var currentParent; // 标识当前父亲
 
@@ -547,6 +543,8 @@
 
 
   function parseHTML(html) {
+    var root = null;
+
     function start(tagName, attrs) {
       var element = createASTElement(tagName, attrs);
 
@@ -583,6 +581,7 @@
 
 
     while (html) {
+      console.log(html);
       var textEnd = html.indexOf('<');
 
       if (textEnd == 0) {
@@ -647,6 +646,7 @@
       html = html.substring(n);
     }
 
+    console.log(root);
     return root;
   }
 
@@ -661,7 +661,6 @@
       if (attr.name === 'style') {
         (function () {
           var obj = {};
-          console.log(attr.value);
           attr.value.split(";").forEach(function (item) {
             var _item$split = item.split(":"),
                 _item$split2 = _slicedToArray(_item$split, 2),
@@ -724,7 +723,6 @@
   }
 
   function generate(el) {
-    console.log("----el-------", el);
     var children = genChildren(el.children); // 子节点
 
     var code = "_c(\"".concat(el.tag, "\",{").concat(el.attrs.length ? genProps(el.attrs) : 'undefined', "}\n  ").concat(children ? ",".concat(children) : '', ")\n  ");
@@ -734,7 +732,9 @@
   function compileToFunction(template) {
     // 编译模板为render函数
     // 1. 将代码-》ast语法树 paser解析
-    var root = parseHTML(template); // console.log(root);
+    console.log(template);
+    var root = parseHTML(template);
+    console.log(root); // console.log(root);
     // 将AST语法树生成Render函数
 
     var code = generate(root);
@@ -839,7 +839,6 @@
     if (typeof tag === 'string') {
       // TODO 组件判断
       if (createComponent(vnode)) {
-        console.log(vnode.componentInstance.$el);
         return vnode.componentInstance.$el;
       }
 
@@ -857,7 +856,6 @@
 
   function createComponent(vnode) {
     var d = vnode.data;
-    console.log(vnode);
 
     if ((d = d.hooks) && (d = d.init)) {
       d(vnode);
@@ -891,9 +889,12 @@
     callHook(vm, 'beforeMount');
 
     var updateComponent = function updateComponent() {
-      // 1. 通过_render方法生成虚拟dom
+      callHook(vm, 'beforeUpdate'); // 1. 通过_render方法生成虚拟dom
       // 2. _update方法通过vnode生成真实dom
+
       vm._update(vm._render());
+
+      callHook(vm, 'updated');
     }; // 通过生成Watcher达成首次渲染
 
 
@@ -920,8 +921,10 @@
   function initMixin$1(Vue) {
     Vue.prototype._init = function (options) {
       //Vue的内部属性#options 用户传递所以参数
-      var vm = this;
-      vm.$options = mergeOptions(vm.constructor.options, options);
+      var vm = this; // console.log(vm.constructor.options, options)
+
+      vm.$options = mergeOptions(vm.constructor.options, options); // console.log('opt', vm.$options)
+
       callHook(vm, 'beforeCreate');
       initState(vm); // 初始化状态
 
@@ -942,11 +945,12 @@
 
       if (!opts.render) {
         // 如果没有render，则编译模板
-        var template = opts.template;
+        var template = opts.template; // console.log('opts---', opts);
 
         if (!template && el) {
           template = el.outerHTML;
-        }
+        } // console.log(template)
+
 
         var render = compileToFunction(template);
         opts.render = render;
@@ -972,7 +976,6 @@
 
   function createComponent$1(vm, tag, data, key, children, Ctor) {
     if (isObject(Ctor)) {
-      console.log(Ctor);
       Ctor = vm.$options._base.extend(Ctor);
     }
 
@@ -1005,11 +1008,10 @@
       return vnode(tag, data, key, children, undefined);
     } else {
       var Ctor = vm.$options.components[tag];
-      console.log('cttor----', vm.$options.components, tag, Ctor);
       return createComponent$1(vm, tag, data, key, children, Ctor);
     }
   }
-  function createTextNode(text) {
+  function createTextNode(vm, text) {
     return vnode(undefined, undefined, undefined, undefined, text);
   }
 
@@ -1022,7 +1024,7 @@
 
 
     Vue.prototype._v = function (text) {
-      return createTextNode(text);
+      return createTextNode(this, text);
     }; // _s JSOM.stringify();
 
 

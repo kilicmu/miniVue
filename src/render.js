@@ -7,7 +7,7 @@ export function renderMixin (Vue) {
   }
   // _a 创建文本虚拟节点
   Vue.prototype._v = function (text) {
-    return createTextNode(text)
+    return createTextNode(this, text)
   }
   // _s JSOM.stringify();
   Vue.prototype._s = function (val) {

@@ -5,10 +5,11 @@ export function initExtend (Vue) {
     const Sub = function VueComponent (options) {
       this._init(options);
     }
-    Sub.prototype = Object.create(this.prototype, { constructor: { value: Sub } });
+
+    Sub.prototype = Object.create(this.prototype);
+    Sub.prototype.constructor = Sub;
     Sub.cid = cid++;
     Sub.options = mergeOptions(this.options, extendOptions);
-    console.log('sub-----', Sub.options);
     return Sub;
   }
 }

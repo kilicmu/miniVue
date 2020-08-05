@@ -3,7 +3,6 @@ import { vnode } from "./vnode";
 
 export function createComponent (vm, tag, data, key, children, Ctor) {
   if (isObject(Ctor)) {
-    console.log(Ctor);
     Ctor = vm.$options._base.extend(Ctor);
   }
 

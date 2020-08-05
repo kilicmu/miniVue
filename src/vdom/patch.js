@@ -12,7 +12,6 @@ export function patch (oldVnode, vnode) {
       return el;
     }
   }
-
 }
 
 function createElm (vnode) {
@@ -20,8 +19,6 @@ function createElm (vnode) {
   if (typeof tag === 'string') {
     // TODO 组件判断
     if (createComponent(vnode)) {
-      console.log(vnode.componentInstance.$el)
-
       return vnode.componentInstance.$el;
     }
     vnode.el = document.createElement(tag);
@@ -37,7 +34,6 @@ function createElm (vnode) {
 
 function createComponent (vnode) {
   let d = vnode.data;
-  console.log(vnode)
   if ((d = d.hooks) && (d = d.init)) {
     d(vnode);
   }

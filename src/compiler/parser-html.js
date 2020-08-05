@@ -7,7 +7,7 @@ const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s
 const startTagClose = /^\s*(\/?)>/;
 
 
-let root = null; // ast语法树树根
+// ast语法树树根
 let currentParent; // 标识当前父亲
 const stack = [];
 const ELEMENT_TYPE = 1;
@@ -25,7 +25,7 @@ function createASTElement (tagName, attrs) {
 // <div><p></p></div>
 
 export function parseHTML (html) {
-
+  let root = null;
   function start (tagName, attrs) {
     let element = createASTElement(tagName, attrs);
     if (!root) {
@@ -58,6 +58,7 @@ export function parseHTML (html) {
   // 使用正则解析
   // 不断截取html字符串，对截取内容解析
   while (html) {
+    console.log(html)
     let textEnd = html.indexOf('<');
     if (textEnd == 0) {
       const startTagMatch = parseStartTag();
@@ -110,6 +111,6 @@ export function parseHTML (html) {
   function advance (n) {
     html = html.substring(n);
   }
-
+  console.log(root)
   return root;
 }

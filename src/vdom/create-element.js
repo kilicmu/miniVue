@@ -12,13 +12,12 @@ export function createElement (vm, tag, data, ...children) {
     return vnode(tag, data, key, children, undefined);
   } else {
     let Ctor = vm.$options.components[ tag ];
-    console.log('cttor----', vm.$options.components, tag, Ctor);
     return createComponent(vm, tag, data, key, children, Ctor);
   }
 
 }
 
-export function createTextNode (text) {
+export function createTextNode (vm, text) {
 
   return vnode(undefined, undefined, undefined, undefined, text);
 }
