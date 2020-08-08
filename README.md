@@ -1,8 +1,112 @@
 # 👻这是个啥？
-* 😗这个项目简单来说就是简单抄一个Vue...
-* 😕因为只是看源码很晕，自己写一下感觉可以更好地理解Vue的原理 
-* 🙃正好Vue3也快正式发布了，先看2再学3 
-* 🤪顺便可以最后蹭一下800年前的热度，水一水我的博客
-* 🌏毕竟源码解析神马的一听就很屌很牛皮 
-* 🍻为帮我不断理解Vue源码的各路大佬的博客干杯~ 
+* 我希望可以通过这个项目来更好的了解Vue 😗
+* 因为只是看源码很晕，自己写一下应该会更有感觉 🙃
+* 希望可以在这个项目里可以加入一些自己的东西 🌏
+* 希望可以做到吧
 * 就酱紫~
+
+
+使用方法, 和vue基本一致：
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+</body>
+</html>
+```
+
+```js
+  const vm = new Vue({
+      data() {
+        return {
+          name: 'kilic',
+          age: '22'
+        }
+      },
+      components: {
+        component1: {
+          data() {
+            setTimeout(() => {
+              this.name = "这是组件1(update)"
+            }, 6000)
+            return {
+              name: '这是组件1'
+            }
+          },
+          template: `
+            <span>{{name}}</span>
+          `,
+          beforeCreate() {
+            console.log('子组件创建前：', this);
+          },
+
+          created() {
+            console.log('子组件实例创建后：', this);
+          },
+
+          beforeMount() {
+            console.log('子组件挂载前', this);
+          },
+
+          mounted() {
+            console.log('子组件挂载后：', this);
+          },
+
+          beforeUpdate() {
+            console.log('子组件更新前', this);
+          },
+
+          updated() {
+            console.log('子组件更新后', this);
+          },
+        }
+      },
+      template: `
+      <div>
+        <div>{{name}}</div>
+        <div>{{age}}</div>
+        <component1></component1>
+      </div>
+      `,
+      beforeCreate() {
+        console.log('创建前：', this);
+      },
+
+      created() {
+        console.log('实例创建后：', this);
+      },
+
+      beforeMount() {
+        console.log('挂载前', this);
+      },
+
+      mounted() {
+        console.log('挂载后：', this);
+      },
+
+      beforeUpdate() {
+        console.log('更新前', this);
+      },
+
+      updated() {
+        console.log('更新后', this);
+      },
+
+
+    })
+
+    vm.$mount("#app")
+
+
+    setTimeout(() => {
+      vm.name = "kilicmu";
+      vm.age = '21'
+    }, 5000)
+```

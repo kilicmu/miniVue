@@ -1016,7 +1016,7 @@
     if (typeof tag === 'string') {
       // TODO 组件判断
       if (createComponent(vnode)) {
-        return vnode.componentInstance.$el;
+        return vnode.el = vnode.componentInstance.$el;
       }
 
       vnode.el = document.createElement(tag);
@@ -1250,7 +1250,7 @@
   initMixin$1(Vue);
   lifecycleMixin(Vue);
   renderMixin(Vue);
-  initGlobalAPI(Vue); // import { compileToFunction } from "../src/compiler/index.js"
+  initGlobalAPI(Vue);
 
   return Vue;
 

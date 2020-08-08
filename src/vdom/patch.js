@@ -141,7 +141,7 @@ export function createElm (vnode) {
   if (typeof tag === 'string') {
     // TODO 组件判断
     if (createComponent(vnode)) {
-      return vnode.componentInstance.$el;
+      return vnode.el = vnode.componentInstance.$el;
     }
     vnode.el = document.createElement(tag);
     updatePrototies(vnode);

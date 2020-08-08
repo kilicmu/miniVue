@@ -12,25 +12,91 @@
   <script src="../dist/vue.js"></script>
   <script>
     const vm = new Vue({
-      el: '#app',
       data() {
         return {
           name: 'kilic',
           age: '22'
         }
       },
+      components: {
+        component1: {
+          data() {
+            setTimeout(() => {
+              this.name = "这是组件1(update)"
+            }, 6000)
+            return {
+              name: '这是组件1'
+            }
+          },
+          template: `
+            <span>{{name}}</span>
+          `,
+          beforeCreate() {
+            console.log('子组件创建前：', this);
+          },
+
+          created() {
+            console.log('子组件实例创建后：', this);
+          },
+
+          beforeMount() {
+            console.log('子组件挂载前', this);
+          },
+
+          mounted() {
+            console.log('子组件挂载后：', this);
+          },
+
+          beforeUpdate() {
+            console.log('子组件更新前', this);
+          },
+
+          updated() {
+            console.log('子组件更新后', this);
+          },
+        }
+      },
       template: `
       <div>
         <div>{{name}}</div>
         <div>{{age}}</div>
+        <component1></component1>
       </div>
-      `
+      `,
+      beforeCreate() {
+        console.log('创建前：', this);
+      },
+
+      created() {
+        console.log('实例创建后：', this);
+      },
+
+      beforeMount() {
+        console.log('挂载前', this);
+      },
+
+      mounted() {
+        console.log('挂载后：', this);
+      },
+
+      beforeUpdate() {
+        console.log('更新前', this);
+      },
+
+      updated() {
+        console.log('更新后', this);
+      },
+
+
     })
+
+    vm.$mount("#app")
+
 
     setTimeout(() => {
       vm.name = "kilicmu";
       vm.age = '21'
-    }, 2000)
+    }, 5000)
   </script>
 </body>
 
