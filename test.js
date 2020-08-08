@@ -5,11 +5,11 @@ const obj = {
 const newObj = JSON.parse(JSON.stringify(obj))
 Object.defineProperty(obj, 'a', {
   get () {
-    console.log("--get--")
+    // console.log("--get--")
     return newObj.a;
   },
   set (newVal) {
-    console.log("--set--")
+    // console.log("--set--")
     newObj.a = newVal;
   }
 })

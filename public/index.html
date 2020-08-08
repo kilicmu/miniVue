@@ -5,70 +5,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
-  <style>
-    #app {
-      display: flex;
-    }
-
-    .left,
-    .right {
-      background: #39e1ff;
-      min-width: 200px;
-      height: 100px;
-    }
-
-    .center {
-      background: orange;
-      flex: 1;
-    }
-
-  </style>
 </head>
 
 <body>
   <div id="app"></div>
   <script src="../dist/vue.js"></script>
   <script>
-    Vue.component('v-test', { template: `<div>hello</div>` })
     const vm = new Vue({
-      el: "#app",
-      data() { // data里面的数据会被观测，对数据更新会更新视图
+      el: '#app',
+      data() {
         return {
-          object: {
-            msg1: 'kilic',
-            obj2: "mu",
-          },
-          array: [ "a", "b", { 'oa': 1, 'ob': 2 } ]
+          name: 'kilic',
+          age: '22'
         }
       },
-      components: {
-        'component1': {
-          template: `<div>component1</div>`
-        }
-      }
-      ,
       template: `
-      <div class="div-btn" style="color: blue">
-        <span>hello {{object.msg1}}</span>
-        <ul class="list" style="color:red; backgroundColor: green;">
-          <li>{{object.obj2}}</li>
-          <li>{{object.obj2}}</li>
-          <li>{{array[1]}}</li>
-          <li></li>
-        </ul>
-        <component1></component1>
+      <div>
+        <div>{{name}}</div>
+        <div>{{age}}</div>
       </div>
       `
     })
 
-
-    // vm.object.msg1 = 'k';
-    // vm.object.msg1 = 'o';
-    // vm.object.msg1 = 'l';
-    // vm.object.obj2 = 'u';
-    // vm.object.obj2 = 'ha';
-    // vm.object.obj2 = 'haa';
-    // vm.$nextTick(() => { console.log(1) })
+    setTimeout(() => {
+      vm.name = "kilicmu";
+      vm.age = '21'
+    }, 2000)
   </script>
 </body>
 

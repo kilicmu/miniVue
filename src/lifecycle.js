@@ -20,7 +20,13 @@ export function lifecycleMixin (Vue) {
   Vue.prototype._update = function (vnode) {
     const vm = this;
     // vm.$el = patch(vm.$el, vnode);
-    vm.$el = patch(vm.$el, vnode);
+    const prevVnode = vm._vnode;
+    vm._vnode = vnode;
+    if (!prevVnode) {
+      vm.$el = patch(vm.$el, vnode);
+    } else {
+      vm.$el = patch(prevVnode, vnode);
+    }
   }
 }
 

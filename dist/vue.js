@@ -205,6 +205,63 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
+  function _createForOfIteratorHelper(o, allowArrayLike) {
+    var it;
+
+    if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
+      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+        if (it) o = it;
+        var i = 0;
+
+        var F = function () {};
+
+        return {
+          s: F,
+          n: function () {
+            if (i >= o.length) return {
+              done: true
+            };
+            return {
+              done: false,
+              value: o[i++]
+            };
+          },
+          e: function (e) {
+            throw e;
+          },
+          f: F
+        };
+      }
+
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+
+    var normalCompletion = true,
+        didErr = false,
+        err;
+    return {
+      s: function () {
+        it = o[Symbol.iterator]();
+      },
+      n: function () {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      },
+      e: function (e) {
+        didErr = true;
+        err = e;
+      },
+      f: function () {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      }
+    };
+  }
+
   function isObject(data) {
     return _typeof(data) === "object" && data !== null;
   }
@@ -280,7 +337,7 @@
     return options;
   }
   function isReservedTag(tag) {
-    var str = 'input,div,ul,li,span';
+    var str = 'input,div,ul,li,span,p';
     var obj = {};
     str.split(',').forEach(function (key) {
       obj[key] = true;
@@ -309,24 +366,7 @@
     Vue.mixin = function (mixin) {
       this.options = mergeOptions(this.options, mixin);
       return this;
-    }; // Vue.mixin({
-    //   b: 2,
-    //   beforeCreate () {
-    //     console.log(this.object);
-    //   },
-    //   mounted () {
-    //     console.log('obj', this.object);
-    //     console.log(this);
-    //   },
-    // });
-    // Vue.mixin({
-    //   a: 1,
-    //   beforeCreate () {
-    //     console.log(2);
-    //   },
-    // });
-    // console.log(Vue.options)
-
+    };
   }
 
   function initGlobalAPI(Vue) {
@@ -499,6 +539,7 @@
     if (opts.data) {
       initData(vm);
     } // compouted
+    // watch
 
   }
 
@@ -581,7 +622,6 @@
 
 
     while (html) {
-      console.log(html);
       var textEnd = html.indexOf('<');
 
       if (textEnd == 0) {
@@ -646,7 +686,6 @@
       html = html.substring(n);
     }
 
-    console.log(root);
     return root;
   }
 
@@ -732,9 +771,7 @@
   function compileToFunction(template) {
     // 编译模板为render函数
     // 1. 将代码-》ast语法树 paser解析
-    console.log(template);
-    var root = parseHTML(template);
-    console.log(root); // console.log(root);
+    var root = parseHTML(template); // console.log(root);
     // 将AST语法树生成Render函数
 
     var code = generate(root);
@@ -812,6 +849,22 @@
     return Watcher;
   }();
 
+  function sameVnode(a, b) {
+    return a.key === b.key && a.tag === b.tag;
+  }
+
+  function createKeyToOldIdx(children, beginIdx, endIdx) {
+    var i, key;
+    var map = {};
+
+    for (i = beginIdx; i <= endIdx; ++i) {
+      key = children[i].key;
+      map[key] = i;
+    }
+
+    return map;
+  }
+
   function patch(oldVnode, vnode) {
     if (!oldVnode) {
       return createElm(vnode);
@@ -819,12 +872,136 @@
       var isRealElement = oldVnode.nodeType;
 
       if (isRealElement) {
+        // 若oldVnode是一个真实节点，首渲染
         var oldElm = oldVnode;
         var parentElm = oldElm.parentNode;
         var el = createElm(vnode);
         parentElm.insertBefore(el, oldElm);
         parentElm.removeChild(oldElm);
         return el;
+      } else {
+        var _oldVnode$children, _vnode$children;
+
+        if (oldVnode.tag !== vnode.tag) {
+          var _el2 = oldVnode.el; // 获取真实节点
+
+          oldVnode.el = _el2.parentNode.replaceChild(createElm(vnode), _el2);
+        }
+
+        if (!oldVnode.tag) {
+          if (oldVnode.text !== vnode.text) {
+            oldVnode.el.textContent = vnode.text;
+          }
+        }
+
+        var _el = vnode.el = oldVnode.el;
+
+        updatePrototies(vnode, oldVnode);
+        var oldChildren = (_oldVnode$children = oldVnode === null || oldVnode === void 0 ? void 0 : oldVnode.children) !== null && _oldVnode$children !== void 0 ? _oldVnode$children : [];
+        var newChildren = (_vnode$children = vnode === null || vnode === void 0 ? void 0 : vnode.children) !== null && _vnode$children !== void 0 ? _vnode$children : [];
+
+        if (oldChildren.length && newChildren.length) {
+          updateChildren(_el, oldChildren, newChildren);
+        } else if (newChildren.length > 0) {
+          var _iterator = _createForOfIteratorHelper(newChildren),
+              _step;
+
+          try {
+            for (_iterator.s(); !(_step = _iterator.n()).done;) {
+              var child = _step.value;
+
+              _el.appendChild(createElm(child));
+            }
+          } catch (err) {
+            _iterator.e(err);
+          } finally {
+            _iterator.f();
+          }
+        } else if (oldChildren.length > 0) {
+          _el.innerHTML = '';
+        }
+      }
+    }
+  }
+
+  function updateChildren(parentElm, oldChildren, newChildren) {
+    var oldKeyToIdx;
+    var oldStartIndex = 0,
+        oldStartVnode = oldChildren[oldStartIndex],
+        oldEndIndex = oldChildren.length - 1,
+        oldEndVnode = oldChildren[oldEndIndex];
+    var newStartIndex = 0,
+        newStartVnode = newChildren[newStartIndex],
+        newEndIndex = newChildren.length - 1,
+        newEndVnode = newChildren[newEndIndex]; // debugger
+
+    while (newStartIndex <= newEndIndex && oldStartIndex <= oldEndIndex) {
+      if (!oldStartVnode) {
+        oldStartVnode = oldChildren[++oldStartIndex];
+      } else if (!oldEndVnode) {
+        oldEndVnode = oldChildren[--oldEndIndex];
+      }
+
+      if (sameVnode(oldStartVnode, newStartVnode)) {
+        console.log(oldStartVnode, newStartVnode);
+        patch(oldStartVnode, newStartVnode); // 复用
+
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      } else if (sameVnode(oldEndVnode, newEndVnode)) {
+        patch(oldEndVnode, newEndVnode);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else if (sameVnode(oldStartVnode, newEndVnode)) {
+        patch(oldStartVnode, newEndVnode);
+        parentElm.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else if (sameVnode(oldEndVnode, newStartVnode)) {
+        // debugger
+        patch(oldEndVnode, newStartVnode);
+        parentElm.insertBefore(oldEndVnode.el, oldStartVnode.el);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      } else {
+        // 乱序
+        // 通过老key做映射表
+        // 在映射表如果有当前newVnode则将那个node移动到oldEndVnode前面
+        // 如果没有则新建一个newVnode的节点然后吧这个节点插入到startVnode前
+        if (!oldKeyToIdx) oldKeyToIdx = createKeyToOldIdx(oldChildren, oldStartIndex, oldEndIndex);
+        var idxInOld = oldKeyToIdx[newStartVnode.key];
+
+        if (!idxInOld) {
+          parentElm.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+        } else {
+          var vnodeToMove = oldChildren[idxInOld];
+          oldChildren[idxInOld] = undefined;
+          parentElm.insertBefore(vnodeToMove.el, oldStartVnode.el);
+          patch(vnodeToMove, newStartVnode);
+        }
+
+        newStartVnode = newChildren[++newStartIndex];
+      }
+    }
+
+    if (newStartIndex <= newEndIndex) {
+      for (var i = newStartIndex; i <= newEndIndex; ++i) {
+        var _newChildren$el, _newChildren;
+
+        // parentElm.appendChild(createElm(newChildren[ i ]));
+        var el = (_newChildren$el = (_newChildren = newChildren[newEndIndex + 1]) === null || _newChildren === void 0 ? void 0 : _newChildren.el) !== null && _newChildren$el !== void 0 ? _newChildren$el : null; // console.log('----', el, newChildren[ i ]);
+
+        parentElm.insertBefore(createElm(newChildren[i]), el);
+      }
+    }
+
+    if (oldStartIndex <= oldEndIndex) {
+      for (var _i = oldStartIndex; _i <= oldEndIndex; ++_i) {
+        var child = oldChildren[_i];
+
+        if (child != undefined) {
+          parentElm.removeChild(child.el);
+        }
       }
     }
   }
@@ -856,29 +1033,47 @@
 
   function createComponent(vnode) {
     var d = vnode.data;
-
-    if ((d = d.hooks) && (d = d.init)) {
-      d(vnode);
-    }
+    d.hooks && d.hooks.init && d.hooks.init(vnode); // if ((d = d.hooks) && (d = d.init)) {
+    //   d(vnode);
+    // }
 
     if (vnode.componentInstance) {
       return true;
     }
   }
 
-  function updatePrototies(vnode) {
+  function updatePrototies(vnode, oldVnode) {
     var newProps = vnode.data || {};
     var el = vnode.el;
 
-    for (var key in newProps) {
-      if (key === 'style') {
+    if (oldVnode) {
+      var _oldProps$style, _newProps$style;
+
+      var oldProps = oldVnode.data || {}; // 处理style
+
+      var oldStyle = (_oldProps$style = oldProps.style) !== null && _oldProps$style !== void 0 ? _oldProps$style : {};
+      var newStyle = (_newProps$style = newProps.style) !== null && _newProps$style !== void 0 ? _newProps$style : {};
+
+      for (var key in oldStyle) {
+        if (!newStyle[key]) el.style[key] = '';
+      }
+
+      for (var _key in oldProps) {
+        if (!newProps[_key]) {
+          el.removeAttribute(_key);
+        }
+      }
+    }
+
+    for (var _key2 in newProps) {
+      if (_key2 === 'style') {
         for (var styleName in newProps.style) {
           el.style[styleName.trim()] = newProps.style[styleName];
         }
-      } else if (key === 'class') {
+      } else if (_key2 === 'class') {
         el.className = newProps["class"];
-      } else if (key !== 'undefined') {
-        el.setAttribute(key, newProps[key]);
+      } else if (_key2 !== 'undefined') {
+        el.setAttribute(_key2, newProps[_key2]);
       }
     }
   }
@@ -905,7 +1100,14 @@
     Vue.prototype._update = function (vnode) {
       var vm = this; // vm.$el = patch(vm.$el, vnode);
 
-      vm.$el = patch(vm.$el, vnode);
+      var prevVnode = vm._vnode;
+      vm._vnode = vnode;
+
+      if (!prevVnode) {
+        vm.$el = patch(vm.$el, vnode);
+      } else {
+        vm.$el = patch(prevVnode, vnode);
+      }
     };
   }
   function callHook(vm, hook) {
@@ -1048,7 +1250,7 @@
   initMixin$1(Vue);
   lifecycleMixin(Vue);
   renderMixin(Vue);
-  initGlobalAPI(Vue);
+  initGlobalAPI(Vue); // import { compileToFunction } from "../src/compiler/index.js"
 
   return Vue;
 

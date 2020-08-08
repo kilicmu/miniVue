@@ -63,9 +63,7 @@ export function compileToFunction (template) {
   // 编译模板为render函数
 
   // 1. 将代码-》ast语法树 paser解析
-  console.log(template)
   const root = parseHTML(template);
-  console.log(root);
   // console.log(root);
   // 将AST语法树生成Render函数
   let code = generate(root);

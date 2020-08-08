@@ -74,7 +74,7 @@ export function mergeOptions (parent, child) {
 
 
 export function isReservedTag (tag) {
-  const str = 'input,div,ul,li,span';
+  const str = 'input,div,ul,li,span,p';
   const obj = {}
   str.split(',').forEach(key => {
     obj[ key ] = true

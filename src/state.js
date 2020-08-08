@@ -14,6 +14,8 @@ export function initState (vm) {
     initData(vm);
   }
   // compouted
+  // watch
+
 }
 
 
