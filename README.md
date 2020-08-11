@@ -35,15 +35,21 @@
           data() {
             return {
               name: '这是组件1',
-              meta: '这是组件的描述',
+              meta: '这是组件的描述'
             }
           },
           template: `
             <div>
-              <span>{{name}}</span>
-              <div>{{meta}}</div>
+              <span>{{name}}</span>  
+              <p>{{meta}}</p>
             </div>
+            
           `,
+          methods: {
+            updateName(name) {
+              this.name = name;
+            }
+          },
           beforeCreate() {
             console.log('子组件创建前：', this);
           },
@@ -57,6 +63,9 @@
           },
 
           mounted() {
+            setTimeout(() => {
+              this.updateName('这是组件1(updated)');
+            }, 6000)
             console.log('子组件挂载后：', this);
           },
 
@@ -89,10 +98,6 @@
       },
 
       mounted() {
-        setTimeout(() => {
-          this.name = "kilicmu";
-          this.age = '21';
-        }, 5000)
         console.log('挂载后：', this);
       },
 
@@ -110,8 +115,14 @@
         }
       },
 
+
     })
 
-    vm.$mount("#app");
+    vm.$mount("#app")
+
+
+    setTimeout(() => {
+      vm.updateName('kilicmu')
+    }, 5000)
 
 ```
