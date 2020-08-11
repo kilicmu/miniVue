@@ -21,16 +21,23 @@
       components: {
         component1: {
           data() {
-            setTimeout(() => {
-              this.name = "这是组件1(update)"
-            }, 6000)
             return {
-              name: '这是组件1'
+              name: '这是组件1',
+              meta: '这是组件的描述'
             }
           },
           template: `
-            <span>{{name}}</span>
+            <div>
+              <span>{{name}}</span>  
+              <p>{{meta}}</p>
+            </div>
+            
           `,
+          methods: {
+            updateName(name) {
+              this.name = name;
+            }
+          },
           beforeCreate() {
             console.log('子组件创建前：', this);
           },
@@ -44,6 +51,9 @@
           },
 
           mounted() {
+            setTimeout(() => {
+              this.updateName('这是组件1(updated)');
+            }, 6000)
             console.log('子组件挂载后：', this);
           },
 
@@ -87,6 +97,12 @@
         console.log('更新后', this);
       },
 
+      methods: {
+        updateName(name) {
+          this.name = name;
+        }
+      },
+
 
     })
 
@@ -94,8 +110,7 @@
 
 
     setTimeout(() => {
-      vm.name = "kilicmu";
-      vm.age = '21'
+      vm.updateName('kilicmu')
     }, 5000)
   </script>
 </body>

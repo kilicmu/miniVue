@@ -516,7 +516,6 @@
       }
     });
   }
-
   function observe(data) {
     // TODO对数据监控
     if (!isObject(data)) {
@@ -530,14 +529,16 @@
   function initState(vm) {
     var opts = vm.$options;
 
-    if (opts.props) ;
-
-    if (opts.methods) {
-      initMethod(vm);
+    if (opts.props) {
+      initProps(vm, opts.props);
     }
 
     if (opts.data) {
       initData(vm);
+    }
+
+    if (opts.methods) {
+      initMethods(vm, opts.methods);
     } // compouted
     // watch
 
@@ -552,6 +553,47 @@
     }
 
     observe(data);
+  }
+
+  function initProps(vm, propsOptions) {
+    var propsData = vm.$options.propsData;
+    var props = vm._props = {};
+    var keys = vm.$props._propKeys = [];
+
+    for (var key in propsOptions) {
+      keys.push(key);
+      var value = props.value;
+      defineReactive(props, key, value);
+
+      if (!(key in vm)) {
+        proxy(vm, "_props", key);
+      }
+    }
+  }
+
+  function initMethods(vm, methods) {
+    var porps = vm.$options.props;
+
+    for (var key in methods) {
+      vm[key] = typeof methods[key] !== 'function' ? function () {} : methods[key].bind(vm);
+    }
+  }
+
+  function stateMixin(Vue) {
+    var dataDef = {};
+
+    dataDef.get = function () {
+      return this._data;
+    };
+
+    var propsDef = {};
+
+    propsDef.get = function () {
+      return this._props;
+    };
+
+    Object.defineProperty(Vue.prototype, '$data', dataDef);
+    Object.defineProperty(Vue.prototype, '$props', propsDef);
   }
 
   //
@@ -771,7 +813,8 @@
   function compileToFunction(template) {
     // 编译模板为render函数
     // 1. 将代码-》ast语法树 paser解析
-    var root = parseHTML(template); // console.log(root);
+    var root = parseHTML(template);
+    console.log(root); // console.log(root);
     // 将AST语法树生成Render函数
 
     var code = generate(root);
@@ -1251,6 +1294,7 @@
   lifecycleMixin(Vue);
   renderMixin(Vue);
   initGlobalAPI(Vue);
+  stateMixin(Vue);
 
   return Vue;
 

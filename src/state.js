@@ -1,18 +1,19 @@
-import { observe } from "./observer/index";
+import { observe, defineReactive } from "./observer/index";
 import { isObject } from "./utils";
 import { proxy } from "./utils";
 
 export function initState (vm) {
   const opts = vm.$options;
   if (opts.props) {
-    initProps(vm);
-  }
-  if (opts.methods) {
-    initMethod(vm);
+    initProps(vm, opts.props);
   }
   if (opts.data) {
     initData(vm);
   }
+  if (opts.methods) {
+    initMethods(vm, opts.methods);
+  }
+
   // compouted
   // watch
 
@@ -30,10 +31,34 @@ function initData (vm) {
   observe(data);
 }
 
-function initProps (vm) {
+function initProps (vm, propsOptions) {
+  const propsData = vm.$options.propsData
+  const props = vm._props = {}
+  const keys = vm.$props._propKeys = [];
+  for (const key in propsOptions) {
+    keys.push(key);
+    const value = props.value;
+    defineReactive(props, key, value);
+
+    if (!(key in vm)) {
+      proxy(vm, `_props`, key)
+    }
+  }
 
 }
 
-function initMethods (vm) {
+function initMethods (vm, methods) {
+  const porps = vm.$options.props;
+  for (const key in methods) {
+    vm[ key ] = typeof methods[ key ] !== 'function' ? function () { } : methods[ key ].bind(vm);
+  }
+}
 
+export function stateMixin (Vue) {
+  const dataDef = {}
+  dataDef.get = function () { return this._data }
+  const propsDef = {}
+  propsDef.get = function () { return this._props }
+  Object.defineProperty(Vue.prototype, '$data', dataDef);
+  Object.defineProperty(Vue.prototype, '$props', propsDef);
 }

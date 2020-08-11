@@ -30,7 +30,7 @@ class Observer {
   }
 }
 
-function defineReactive (data, key, value) {
+export function defineReactive (data, key, value) {
   const dep = new Dep();
   observe(value);
   // debugger
