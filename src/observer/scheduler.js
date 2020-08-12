@@ -7,6 +7,7 @@ let queue = [];
 function flushSchedulerQueue () {
   queue.forEach(watcher => {
     watcher.run();
+
   })
   has = {};
   queue = [];
@@ -20,6 +21,6 @@ export function queueWatcher (watcher) {
     if (!flushing) {
       queue.push(watcher)
     }
-    nextTick(flushSchedulerQueue, 0);
+    nextTick(flushSchedulerQueue, this);
   }
 }

@@ -114,12 +114,19 @@
           this.name = name;
         }
       },
-
-
+      watch: {
+        name: (oldVal, newVal) => {
+          console.log("watcher: ", oldVal, newVal)
+        }
+      }
     })
 
     vm.$mount("#app")
 
+
+    setTimeout(() => {
+      vm.updateName('kilicmu??')
+    }, 3000)
 
     setTimeout(() => {
       vm.updateName('kilicmu')

@@ -345,16 +345,17 @@
     return !!obj[tag];
   }
 
-  var cid = 0;
   function initExtend(Vue) {
     Vue.extend = function (extendOptions) {
+      var cid = 0;
+
       var Sub = function VueComponent(options) {
         this._init(options);
       };
 
       Sub.prototype = Object.create(this.prototype);
       Sub.prototype.constructor = Sub;
-      Sub.cid = cid++;
+      Sub.cid = ++cid;
       Sub.options = mergeOptions(this.options, extendOptions);
       return Sub;
     };
@@ -528,6 +529,7 @@
 
   function initState(vm) {
     var opts = vm.$options;
+    console.log(opts);
 
     if (opts.props) {
       initProps(vm, opts.props);
@@ -542,6 +544,10 @@
     } // compouted
     // watch
 
+
+    if (opts.watch) {
+      initWatch(vm, opts.watch);
+    }
   }
 
   function initData(vm) {
@@ -577,6 +583,43 @@
     for (var key in methods) {
       vm[key] = typeof methods[key] !== 'function' ? function () {} : methods[key].bind(vm);
     }
+  }
+
+  function initWatch(vm, watch) {
+    for (var key in watch) {
+      var handler = watch[key];
+
+      if (Array.isArray[handler]) {
+        var _iterator = _createForOfIteratorHelper(handler),
+            _step;
+
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var h = _step.value;
+            createWatcher(vm, key, h);
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+      } else {
+        createWatcher(vm, key, handler);
+      }
+    }
+  }
+
+  function createWatcher(vm, expOrFn, handler, options) {
+    if (_typeof(handler) === 'object') {
+      options = handler;
+      handler = options.handler;
+    }
+
+    if (typeof handler === 'string') {
+      handler = vm[handler];
+    }
+
+    return vm.$watch(expOrFn, handler, options);
   }
 
   function stateMixin(Vue) {
@@ -845,7 +888,7 @@
         queue.push(watcher);
       }
 
-      nextTick(flushSchedulerQueue, 0);
+      nextTick(flushSchedulerQueue, this);
     }
   }
 
@@ -859,8 +902,36 @@
       this.exprOrFn = exprOrFn;
       this.cb = cb;
       this.options = options;
-      this.getter = exprOrFn;
-      this.get();
+      this.user = options.user; // 判断是否是$watch创造的 watcher
+
+      console.log(this.user);
+
+      if (typeof exprOrFn === "string") {
+        this.getter = function () {
+          var path = exprOrFn.split('.');
+          var obj = vm;
+
+          var _iterator = _createForOfIteratorHelper(path),
+              _step;
+
+          try {
+            for (_iterator.s(); !(_step = _iterator.n()).done;) {
+              var p = _step.value;
+              obj = obj[p];
+            }
+          } catch (err) {
+            _iterator.e(err);
+          } finally {
+            _iterator.f();
+          }
+
+          return obj;
+        };
+      } else {
+        this.getter = exprOrFn;
+      }
+
+      this.value = this.get();
     }
 
     _createClass(Watcher, [{
@@ -868,8 +939,9 @@
       value: function get() {
         var vm = this.vm;
         pushTarget(this);
-        this.getter.call(vm);
+        var value = this.getter.call(vm);
         popTarget();
+        return value;
       }
     }, {
       key: "addDep",
@@ -885,7 +957,14 @@
     }, {
       key: "run",
       value: function run() {
-        this.get();
+        var newVal = this.get();
+        var oldVal = this.value;
+        this.value = newVal;
+        console.log(this.user);
+
+        if (this.user) {
+          this.cb.call(this.vm, newVal, oldVal);
+        }
       }
     }]);
 
@@ -1019,6 +1098,7 @@
         } else {
           var vnodeToMove = oldChildren[idxInOld];
           oldChildren[idxInOld] = undefined;
+          console.log("-------", oldStartVnode);
           parentElm.insertBefore(vnodeToMove.el, oldStartVnode.el);
           patch(vnodeToMove, newStartVnode);
         }
@@ -1206,6 +1286,22 @@
     };
 
     Vue.prototype.$nextTick = nextTick;
+
+    Vue.prototype.$watch = function (expOrFn, cb) {
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+      var vm = this;
+      options.immediate = options.immediate ? options.immediate : true;
+      options.user = true;
+      var watcher = new Watcher(vm, expOrFn, cb, options);
+
+      if (options.immediate) {
+        try {
+          cb.call(vm, watcher.value);
+        } catch (error) {
+          handleError(error, vm, "callback for immediate watcher \"".concat(watcher.expression, "\""));
+        }
+      }
+    };
   }
 
   function vnode(tag, data, key, children, text, componentOptions) {

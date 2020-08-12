@@ -51,9 +51,9 @@
           },
 
           mounted() {
-            setTimeout(() => {
-              this.updateName('这是组件1(updated)');
-            }, 6000)
+            // setTimeout(() => {
+            //   this.updateName('这是组件1(updated)');
+            // }, 6000)
             console.log('子组件挂载后：', this);
           },
 
@@ -102,16 +102,26 @@
           this.name = name;
         }
       },
+      watch: {
+        name: (oldVal, newVal) => {
+          console.error("watcher", oldVal, newVal)
+        }
+      }
 
 
     })
 
     vm.$mount("#app")
 
+    setTimeout(() => {
+      vm.updateName('kilicmu??')
+    }, 3000)
 
     setTimeout(() => {
       vm.updateName('kilicmu')
     }, 5000)
+
+
   </script>
 </body>
 

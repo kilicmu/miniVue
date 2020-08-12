@@ -4,6 +4,7 @@ import { callHook, mountComponent } from "./lifecycle"
 import { initGlobalAPI } from "./global-api/index"
 import { mergeOptions } from "./utils";
 import { nextTick } from "../utils/next-tick";
+import { Watcher } from "./observer/watcher";
 
 
 export function initMixin (Vue) {
@@ -47,4 +48,17 @@ export function initMixin (Vue) {
   }
 
   Vue.prototype.$nextTick = nextTick;
+  Vue.prototype.$watch = function (expOrFn, cb, options = {}) {
+    const vm = this;
+    options.immediate = options.immediate ? options.immediate : true;
+    options.user = true;
+    const watcher = new Watcher(vm, expOrFn, cb, options)
+    if (options.immediate) {
+      try {
+        cb.call(vm, watcher.value)
+      } catch (error) {
+        handleError(error, vm, `callback for immediate watcher "${watcher.expression}"`)
+      }
+    }
+  };
 }

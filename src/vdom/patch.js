@@ -105,10 +105,12 @@ function updateChildren (parentElm, oldChildren, newChildren) {
       if (!oldKeyToIdx) oldKeyToIdx = createKeyToOldIdx(oldChildren, oldStartIndex, oldEndIndex);
       let idxInOld = oldKeyToIdx[ newStartVnode.key ]
       if (!idxInOld) {
+
         parentElm.insertBefore(createElm(newStartVnode), oldStartVnode.el);
       } else {
         const vnodeToMove = oldChildren[ idxInOld ];
         oldChildren[ idxInOld ] = undefined;
+        console.log("-------", oldStartVnode);
         parentElm.insertBefore(vnodeToMove.el, oldStartVnode.el);
         patch(vnodeToMove, newStartVnode);
       }

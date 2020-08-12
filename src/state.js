@@ -4,6 +4,7 @@ import { proxy } from "./utils";
 
 export function initState (vm) {
   const opts = vm.$options;
+  console.log(opts);
   if (opts.props) {
     initProps(vm, opts.props);
   }
@@ -16,6 +17,9 @@ export function initState (vm) {
 
   // compouted
   // watch
+  if (opts.watch) {
+    initWatch(vm, opts.watch);
+  }
 
 }
 
@@ -52,6 +56,31 @@ function initMethods (vm, methods) {
   for (const key in methods) {
     vm[ key ] = typeof methods[ key ] !== 'function' ? function () { } : methods[ key ].bind(vm);
   }
+}
+
+function initWatch (vm, watch) {
+  for (const key in watch) {
+    const handler = watch[ key ]
+    if (Array.isArray[ handler ]) {
+      for (let h of handler) {
+        createWatcher(vm, key, h);
+      }
+    } else {
+      createWatcher(vm, key, handler);
+    }
+  }
+}
+
+function createWatcher (vm, expOrFn, handler, options) {
+  if (typeof handler === 'object') {
+    options = handler;
+    handler = options.handler;
+  }
+  if (typeof handler === 'string') {
+    handler = vm[ handler ];
+  }
+
+  return vm.$watch(expOrFn, handler, options);
 }
 
 export function stateMixin (Vue) {

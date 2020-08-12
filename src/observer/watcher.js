@@ -8,16 +8,30 @@ export class Watcher {
     this.exprOrFn = exprOrFn;
     this.cb = cb;
     this.options = options;
+    this.user = options.user; // 判断是否是$watch创造的 watcher
+    console.log(this.user);
+    if (typeof exprOrFn === "string") {
+      this.getter = function () {
+        const path = exprOrFn.split('.');
+        let obj = vm;
+        for (let p of path) {
+          obj = obj[ p ];
+        }
+        return obj;
+      }
+    } else {
+      this.getter = exprOrFn;
+    }
 
-    this.getter = exprOrFn;
-    this.get();
+    this.value = this.get();
   }
 
   get () {
     const vm = this.vm
     pushTarget(this);
-    this.getter.call(vm);
+    const value = this.getter.call(vm);
     popTarget();
+    return value;
   }
 
   addDep (dep) {
@@ -31,7 +45,13 @@ export class Watcher {
   }
 
   run () {
-    this.get();
+    const newVal = this.get();
+    const oldVal = this.value;
+    this.value = newVal;
+    console.log(this.user);
+    if (this.user) {
+      this.cb.call(this.vm, newVal, oldVal)
+    }
   }
 
 }
