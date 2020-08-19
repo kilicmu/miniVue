@@ -1,128 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-
-<body>
-  <div id="app"></div>
-  <script src="../dist/vue.js"></script>
-  <script>
-    const vm = new Vue({
-      data() {
-        return {
-          name: 'kilic',
-          age: '22'
-        }
-      },
-      components: {
-        component1: {
-          data() {
-            return {
-              name: '这是组件1',
-              meta: '这是组件的描述'
-            }
-          },
-          template: `
+  <body>
+    <div id="app"></div>
+    <script src="../dist/vue.js"></script>
+    <script>
+      const vm = new Vue({
+        data() {
+          return {
+            name: "kilic",
+            age: "22",
+          };
+        },
+        components: {
+          component1: {
+            data() {
+              return {
+                name: "这是组件1",
+                meta: "这是组件的描述",
+              };
+            },
+            template: `
             <div>
               <span>{{name}}</span>  
               <p>{{meta}}</p>
+              
             </div>
             
           `,
-          methods: {
-            updateName(name) {
-              this.name = name;
-            }
-          },
-          beforeCreate() {
-            console.log('子组件创建前：', this);
-          },
+            methods: {
+              updateName(name) {
+                this.name = name;
+              },
+            },
+            beforeCreate() {
+              console.log("子组件创建前：", this);
+            },
 
-          created() {
-            console.log('子组件实例创建后：', this);
-          },
+            created() {
+              console.log("子组件实例创建后：", this);
+            },
 
-          beforeMount() {
-            console.log('子组件挂载前', this);
-          },
+            beforeMount() {
+              console.log("子组件挂载前", this);
+            },
 
-          mounted() {
-            // setTimeout(() => {
-            //   this.updateName('这是组件1(updated)');
-            // }, 6000)
-            console.log('子组件挂载后：', this);
-          },
+            mounted() {
+              // setTimeout(() => {
+              //   this.updateName('这是组件1(updated)');
+              // }, 6000)
+              console.log("子组件挂载后：", this);
+            },
 
-          beforeUpdate() {
-            console.log('子组件更新前', this);
-          },
+            beforeUpdate() {
+              console.log("子组件更新前", this);
+            },
 
-          updated() {
-            console.log('子组件更新后', this);
+            updated() {
+              console.log("子组件更新后", this);
+            },
           },
-        }
-      },
-      template: `
+        },
+        template: `
       <div>
         <div>{{name}}</div>
         <div>{{age}}</div>
+        <span>{{fullMsg}}</span>
         <component1></component1>
       </div>
       `,
-      beforeCreate() {
-        console.log('创建前：', this);
-      },
+        beforeCreate() {
+          console.log("创建前：", this);
+        },
 
-      created() {
-        console.log('实例创建后：', this);
-      },
+        created() {
+          console.log("实例创建后：", this);
+        },
 
-      beforeMount() {
-        console.log('挂载前', this);
-      },
+        beforeMount() {
+          console.log("挂载前", this);
+        },
 
-      mounted() {
-        console.log('挂载后：', this);
-      },
+        mounted() {
+          console.log("挂载后：", this);
+        },
 
-      beforeUpdate() {
-        console.log('更新前', this);
-      },
+        beforeUpdate() {
+          console.log("更新前", this);
+        },
 
-      updated() {
-        console.log('更新后', this);
-      },
+        updated() {
+          console.log("更新后", this);
+        },
 
-      methods: {
-        updateName(name) {
-          this.name = name;
-        }
-      },
-      watch: {
-        name: (oldVal, newVal) => {
-          console.error("watcher", oldVal, newVal)
-        }
-      }
+        methods: {
+          updateName(name) {
+            this.name = name;
+          },
+        },
+        watch: {
+          name: (oldVal, newVal) => {
+            console.error("watcher", oldVal, newVal);
+          },
+        },
+        computed: {
+          fullMsg() {
+            console.log("computed");
+            return `${this.name} - ${this.age}`;
+          },
+        },
+      });
 
+      vm.$mount("#app");
 
-    })
+      setTimeout(() => {
+        vm.updateName("kilicmu??");
+      }, 3000);
 
-    vm.$mount("#app")
+      setTimeout(() => {
+        vm.updateName("kilicmu");
+      }, 5000);
 
-    setTimeout(() => {
-      vm.updateName('kilicmu??')
-    }, 3000)
-
-    setTimeout(() => {
-      vm.updateName('kilicmu')
-    }, 5000)
-
-
-  </script>
-</body>
-
+      console.log("fullname", vm.fullMsg);
+      console.log("fullname", vm.fullMsg);
+    </script>
+  </body>
 </html>

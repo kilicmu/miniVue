@@ -527,6 +527,123 @@
     return new Observer(data);
   }
 
+  var has = {};
+  var queue = [];
+
+  function flushSchedulerQueue() {
+    queue.forEach(function (watcher) {
+      watcher.run();
+    });
+    has = {};
+    queue = [];
+  }
+
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+
+    if (has[id] == null) {
+      has[id] = true;
+
+      {
+        queue.push(watcher);
+      }
+
+      nextTick(flushSchedulerQueue, this);
+    }
+  }
+
+  var id = 0;
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, exprOrFn, cb, options) {
+      _classCallCheck(this, Watcher);
+
+      this.id = id++;
+      this.vm = vm;
+      this.exprOrFn = exprOrFn;
+      this.cb = cb;
+      this.options = options;
+      this.user = options.user; // 判断是否是$watch创造的 watcher
+
+      this.value = null;
+      this.lazy = options.lazy;
+      this.dirty = this.lazy;
+
+      if (typeof exprOrFn === "string") {
+        this.getter = function () {
+          var path = exprOrFn.split(".");
+          var obj = vm;
+
+          var _iterator = _createForOfIteratorHelper(path),
+              _step;
+
+          try {
+            for (_iterator.s(); !(_step = _iterator.n()).done;) {
+              var p = _step.value;
+              obj = obj[p];
+            }
+          } catch (err) {
+            _iterator.e(err);
+          } finally {
+            _iterator.f();
+          }
+
+          return obj;
+        };
+      } else {
+        this.getter = exprOrFn;
+      }
+
+      this.value = this.lazy ? undefined : this.get();
+    }
+
+    _createClass(Watcher, [{
+      key: "get",
+      value: function get() {
+        var vm = this.vm;
+        var value = undefined;
+        pushTarget(this);
+        value = this.getter.call(vm);
+        popTarget();
+        return value;
+      }
+    }, {
+      key: "evaluate",
+      value: function evaluate() {
+        this.value = this.get();
+        this.dirty = false;
+      }
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+        dep.addSub(this);
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        if (this.lazy) {
+          this.dirty = true;
+        } else {
+          queueWatcher(this);
+        }
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        var newVal = this.get();
+        var oldVal = this.value;
+        this.value = newVal;
+        console.log(this.user);
+
+        if (this.user) {
+          this.cb.call(this.vm, newVal, oldVal);
+        }
+      }
+    }]);
+
+    return Watcher;
+  }();
+
   function initState(vm) {
     var opts = vm.$options;
     console.log(opts);
@@ -548,14 +665,71 @@
     if (opts.watch) {
       initWatch(vm, opts.watch);
     }
+
+    if (opts.computed) {
+      initComputed(vm, opts.computed);
+    }
+  }
+
+  function initComputed(vm, computed) {
+    var watchers = vm._computedWatchers = Object.create(null);
+
+    for (var key in computed) {
+      var userDef = computed[key];
+      var getter = typeof userDef === "function" ? userDef : userDef.get;
+      watchers[key] = new Watcher(vm, getter, function () {}, {
+        lazy: true
+      });
+
+      if (!(key in vm)) {
+        defineComputed(vm, key, userDef);
+      }
+    }
+  }
+
+  var sharedPropertyDefinition = {
+    enumerable: true,
+    configurable: true,
+    get: function get() {},
+    set: function set() {}
+  };
+
+  function defineComputed(target, key, userDef) {
+    if (typeof userDef === "function") {
+      sharedPropertyDefinition.get = createComputedGetter(key);
+
+      sharedPropertyDefinition.set = function () {};
+    } else {
+      sharedPropertyDefinition.get = userDef.get ? userDef.get : createComputedGetter(key);
+      sharedPropertyDefinition.set = userDef.set ? userDef.set : function () {};
+    }
+
+    Object.defineProperty(target, key, sharedPropertyDefinition);
+  }
+
+  function createComputedGetter(key) {
+    return function computedGetter() {
+      var watcher = this._computedWatchers && this._computedWatchers[key];
+
+      if (watcher) {
+        if (watcher.dirty) {
+          watcher.evaluate();
+        } // if (Dep.target) {
+        //   watcher.depend();
+        // }
+
+
+        return watcher.value;
+      }
+    };
   }
 
   function initData(vm) {
     var data = vm.$options.data;
-    data = vm._data = typeof data === 'function' ? data.call(vm) : data; // 对数据进行观测
+    data = vm._data = typeof data === "function" ? data.call(vm) : data; // 对数据进行观测
 
     for (var key in data) {
-      proxy(vm, '_data', key);
+      proxy(vm, "_data", key);
     }
 
     observe(data);
@@ -581,7 +755,7 @@
     var porps = vm.$options.props;
 
     for (var key in methods) {
-      vm[key] = typeof methods[key] !== 'function' ? function () {} : methods[key].bind(vm);
+      vm[key] = typeof methods[key] !== "function" ? function () {} : methods[key].bind(vm);
     }
   }
 
@@ -610,12 +784,12 @@
   }
 
   function createWatcher(vm, expOrFn, handler, options) {
-    if (_typeof(handler) === 'object') {
+    if (_typeof(handler) === "object") {
       options = handler;
       handler = options.handler;
     }
 
-    if (typeof handler === 'string') {
+    if (typeof handler === "string") {
       handler = vm[handler];
     }
 
@@ -635,8 +809,8 @@
       return this._props;
     };
 
-    Object.defineProperty(Vue.prototype, '$data', dataDef);
-    Object.defineProperty(Vue.prototype, '$props', propsDef);
+    Object.defineProperty(Vue.prototype, "$data", dataDef);
+    Object.defineProperty(Vue.prototype, "$props", propsDef);
   }
 
   //
@@ -866,110 +1040,6 @@
     return renderFn; // 2. 标记静态书 markup解析
     // 3. 通过ast产生的语法树，生成render函数 render（codegen）
   }
-
-  var has = {};
-  var queue = [];
-
-  function flushSchedulerQueue() {
-    queue.forEach(function (watcher) {
-      watcher.run();
-    });
-    has = {};
-    queue = [];
-  }
-
-  function queueWatcher(watcher) {
-    var id = watcher.id;
-
-    if (has[id] == null) {
-      has[id] = true;
-
-      {
-        queue.push(watcher);
-      }
-
-      nextTick(flushSchedulerQueue, this);
-    }
-  }
-
-  var id = 0;
-  var Watcher = /*#__PURE__*/function () {
-    function Watcher(vm, exprOrFn, cb, options) {
-      _classCallCheck(this, Watcher);
-
-      this.id = id++;
-      this.vm = vm;
-      this.exprOrFn = exprOrFn;
-      this.cb = cb;
-      this.options = options;
-      this.user = options.user; // 判断是否是$watch创造的 watcher
-
-      console.log(this.user);
-
-      if (typeof exprOrFn === "string") {
-        this.getter = function () {
-          var path = exprOrFn.split('.');
-          var obj = vm;
-
-          var _iterator = _createForOfIteratorHelper(path),
-              _step;
-
-          try {
-            for (_iterator.s(); !(_step = _iterator.n()).done;) {
-              var p = _step.value;
-              obj = obj[p];
-            }
-          } catch (err) {
-            _iterator.e(err);
-          } finally {
-            _iterator.f();
-          }
-
-          return obj;
-        };
-      } else {
-        this.getter = exprOrFn;
-      }
-
-      this.value = this.get();
-    }
-
-    _createClass(Watcher, [{
-      key: "get",
-      value: function get() {
-        var vm = this.vm;
-        pushTarget(this);
-        var value = this.getter.call(vm);
-        popTarget();
-        return value;
-      }
-    }, {
-      key: "addDep",
-      value: function addDep(dep) {
-        var id = dep.id;
-        dep.addSub(this);
-      }
-    }, {
-      key: "update",
-      value: function update() {
-        queueWatcher(this);
-      }
-    }, {
-      key: "run",
-      value: function run() {
-        var newVal = this.get();
-        var oldVal = this.value;
-        this.value = newVal;
-        console.log(this.user);
-
-        if (this.user) {
-          this.cb.call(this.vm, newVal, oldVal);
-        }
-      }
-    }]);
-
-    return Watcher;
-  }();
 
   function sameVnode(a, b) {
     return a.key === b.key && a.tag === b.tag;
