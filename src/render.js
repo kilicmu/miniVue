@@ -15,8 +15,18 @@ export function renderMixin (Vue) {
   }
   Vue.prototype._render = function () {
     const vm = this;
+
     const { render } = vm.$options
-    const vnode = render.call(vm);
+    console.log(render);
+    const vnode = render.call(vm, vm.$createElement);
+
+    // console.log('vnode', vnode)
     return vnode;
   }
+}
+
+
+export function initRender (vm) {
+  vm.$createElement = (tag, data, ...children) => createElement(vm, tag, data, ...children);
+  vm.$createTextNode = (text) => createTextNode(vm, text);
 }

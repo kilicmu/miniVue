@@ -28,8 +28,8 @@
           },
           template: `
             <div>
-              <span>{{name}}</span>  
-              <p>{{meta}}</p>
+              <span>{this.name}</span>  
+              <p>{this.meta}</p>
             </div>
             
           `,
@@ -66,13 +66,23 @@
           },
         }
       },
+      // template: `
+      // <div>
+      //   <div>{{name}}</div>
+      //   <div onclick={{handleClick}}>{{age}}</div>
+      //   <component1></component1>
+      // </div>
+      // `,
       template: `
       <div>
-        <div>{{name}}</div>
-        <div>{{age}}</div>
-        <component1></component1>
+        <span onClick={this.handleClick.bind(this)}>{this.name}</span>
+        <p>{this.age}</p>
+        <component1></conponent>
       </div>
       `,
+      // render(){
+      //   return createElement()
+      // },
       beforeCreate() {
         console.log('创建前：', this);
       },
@@ -95,11 +105,15 @@
 
       updated() {
         console.log('更新后', this);
+        console.log(this.handleClick)
       },
 
       methods: {
         updateName(name) {
           this.name = name;
+        },
+        handleClick() {
+          console.log('click');
         }
       },
       watch: {

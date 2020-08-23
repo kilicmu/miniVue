@@ -13,6 +13,5 @@ export function createComponent (vm, tag, data, key, children, Ctor) {
     },
 
   }
-
   return vnode(`vue-component-${Ctor.cid}-${tag}`, data, key, undefined, undefined, { Ctor, children });
 }

@@ -5,6 +5,8 @@ import { initGlobalAPI } from "./global-api/index"
 import { mergeOptions } from "./utils";
 import { nextTick } from "../utils/next-tick";
 import { Watcher } from "./observer/watcher";
+import { initRender } from "./render";
+import { evalJSX } from "./compiler/evalJSX";
 
 
 export function initMixin (Vue) {
@@ -15,8 +17,8 @@ export function initMixin (Vue) {
     vm.$options = mergeOptions(vm.constructor.options, options);
     // console.log('opt', vm.$options)
     callHook(vm, 'beforeCreate');
+    initRender(vm);
     initState(vm); // 初始化状态
-
     callHook(vm, 'created');
 
     // 通过模板渲染
@@ -39,8 +41,9 @@ export function initMixin (Vue) {
       if (!template && el) {
         template = el.outerHTML;
       }
-      // console.log(template)
-      const render = compileToFunction(template);
+      // const render = compileToFunction(template);
+      console.log(this.createElement);
+      const render = new Function(`with(this){return ${evalJSX(template, { this: this })}}`)
       opts.render = render;
     }
     //  opts.render;

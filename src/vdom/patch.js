@@ -143,6 +143,7 @@ export function createElm (vnode) {
   if (typeof tag === 'string') {
     // TODO 组件判断
     if (createComponent(vnode)) {
+      // console.log('el -----------------', vnode.el);
       return vnode.el = vnode.componentInstance.$el;
     }
     vnode.el = document.createElement(tag);
@@ -157,6 +158,7 @@ export function createElm (vnode) {
 }
 
 function createComponent (vnode) {
+  console.log('component-vnode------------', vnode)
   let d = vnode.data;
   d.hooks && d.hooks.init && d.hooks.init(vnode)
   // if ((d = d.hooks) && (d = d.init)) {
@@ -170,6 +172,7 @@ function createComponent (vnode) {
 function updatePrototies (vnode, oldVnode) {
   const newProps = vnode.data || {};
   const el = vnode.el;
+  // console.log('____', newProps.onClick())
   if (oldVnode) {
     const oldProps = oldVnode.data || {};
     // 处理style
@@ -194,6 +197,10 @@ function updatePrototies (vnode, oldVnode) {
       }
     } else if (key === 'class') {
       el.className = newProps.class;
+    } else if (key.startsWith('on')) {
+      const event = key.toLowerCase();
+      console.log();
+      el[ event ] = newProps[ key ];
     } else if (key !== 'undefined') {
       el.setAttribute(key, newProps[ key ]);
     }

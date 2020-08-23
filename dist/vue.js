@@ -149,41 +149,6 @@
     return target;
   }
 
-  function _slicedToArray(arr, i) {
-    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
-  }
-
-  function _arrayWithHoles(arr) {
-    if (Array.isArray(arr)) return arr;
-  }
-
-  function _iterableToArrayLimit(arr, i) {
-    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-    var _e = undefined;
-
-    try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"] != null) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
   function _unsupportedIterableToArray(o, minLen) {
     if (!o) return;
     if (typeof o === "string") return _arrayLikeToArray(o, minLen);
@@ -199,10 +164,6 @@
     for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
 
     return arr2;
-  }
-
-  function _nonIterableRest() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _createForOfIteratorHelper(o, allowArrayLike) {
@@ -639,234 +600,6 @@
     Object.defineProperty(Vue.prototype, '$props', propsDef);
   }
 
-  //
-  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名
-
-  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); //<a:a>
-
-  var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则
-
-  var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配结尾的</div>
-
-  var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
-  var startTagClose = /^\s*(\/?)>/; // ast语法树树根
-
-  var currentParent; // 标识当前父亲
-
-  var stack = [];
-  var ELEMENT_TYPE = 1;
-  var TEXT_TYPE = 3;
-
-  function createASTElement(tagName, attrs) {
-    return {
-      tag: tagName,
-      type: ELEMENT_TYPE,
-      children: [],
-      attrs: attrs,
-      parent: null
-    };
-  } // <div><p></p></div>
-
-
-  function parseHTML(html) {
-    var root = null;
-
-    function start(tagName, attrs) {
-      var element = createASTElement(tagName, attrs);
-
-      if (!root) {
-        root = element;
-      }
-
-      currentParent = element; // 把当前元素标记为父AST
-
-      stack.push(element);
-    }
-
-    function end(tagName) {
-      var element = stack.pop();
-      currentParent = stack[stack.length - 1];
-
-      if (currentParent) {
-        element.parent = currentParent;
-        currentParent.children.push(element);
-      }
-    }
-
-    function chars(text) {
-      text = text.replace(/\s/g, '');
-
-      if (text) {
-        currentParent.children.push({
-          text: text,
-          type: TEXT_TYPE
-        });
-      }
-    } // 使用正则解析
-    // 不断截取html字符串，对截取内容解析
-
-
-    while (html) {
-      var textEnd = html.indexOf('<');
-
-      if (textEnd == 0) {
-        var startTagMatch = parseStartTag();
-
-        if (startTagMatch) {
-          start(startTagMatch.tagName, startTagMatch.attrs);
-        }
-
-        var endTagMatch = html.match(endTag);
-
-        if (endTagMatch) {
-          end(endTagMatch[1]);
-          advance(endTagMatch[0].length);
-        }
-      }
-
-      var text = void 0;
-
-      if (textEnd >= 0) {
-        text = html.substring(0, textEnd); // 文本内容截取
-      }
-
-      if (text) {
-        chars(text);
-        advance(text.length);
-      }
-
-      if (textEnd < 0) {
-        break;
-      }
-    }
-
-    function parseStartTag() {
-      var start = html.match(startTagOpen);
-
-      if (start) {
-        var match = {
-          tagName: start[1],
-          attrs: []
-        };
-        advance(start[0].length);
-
-        var _end, attr;
-
-        while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
-          match.attrs.push({
-            "name": attr[1],
-            "value": attr[3] || attr[4] || attr[5]
-          });
-          advance(attr[0].length);
-        }
-
-        if (_end) {
-          advance(_end[0].length);
-          return match;
-        }
-      }
-    }
-
-    function advance(n) {
-      html = html.substring(n);
-    }
-
-    return root;
-  }
-
-  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // 匹配动态变量的+？
-
-  function genProps(attrs) {
-    var str = '';
-
-    for (var i = 0; i < attrs.length; i++) {
-      var attr = attrs[i];
-
-      if (attr.name === 'style') {
-        (function () {
-          var obj = {};
-          attr.value.split(";").forEach(function (item) {
-            var _item$split = item.split(":"),
-                _item$split2 = _slicedToArray(_item$split, 2),
-                key = _item$split2[0],
-                value = _item$split2[1];
-
-            obj[key] = value;
-          });
-          attr.value = obj;
-        })();
-      }
-
-      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
-    }
-
-    return str;
-  }
-
-  function genChildren(el) {
-    var children = el;
-
-    if (children && children.length > 0) {
-      return "".concat(children.map(function (c) {
-        return gen(c);
-      }).join(','));
-    } else {
-      return false;
-    }
-  }
-
-  function gen(node) {
-    if (node.type === 1) {
-      // 元素
-      return generate(node);
-    } else {
-      // 文本
-      // 正则 lastIndex问题
-      var text = node.text;
-      var tokens = [];
-      var match, index;
-      var lastIndex = defaultTagRE.lastIndex = 0;
-
-      while (match = defaultTagRE.exec(text)) {
-        index = match.index;
-
-        if (index > lastIndex) {
-          tokens.push(JSON.stringify(text.slice(lastIndex, index)));
-        }
-
-        tokens.push("_s(".concat(match[1].trim(), ")"));
-        lastIndex = index + match[0].length;
-      }
-
-      if (lastIndex < text.length) {
-        tokens.push(JSON.stringify(text.slice(lastIndex)));
-      }
-
-      return "_v(".concat(tokens.join('+'), ")");
-    }
-  }
-
-  function generate(el) {
-    var children = genChildren(el.children); // 子节点
-
-    var code = "_c(\"".concat(el.tag, "\",{").concat(el.attrs.length ? genProps(el.attrs) : 'undefined', "}\n  ").concat(children ? ",".concat(children) : '', ")\n  ");
-    return code;
-  }
-
-  function compileToFunction(template) {
-    // 编译模板为render函数
-    // 1. 将代码-》ast语法树 paser解析
-    var root = parseHTML(template);
-    console.log(root); // console.log(root);
-    // 将AST语法树生成Render函数
-
-    var code = generate(root);
-    code = "with(this){ return ".concat(code, "}");
-    var renderFn = new Function(code);
-    return renderFn; // 2. 标记静态书 markup解析
-    // 3. 通过ast产生的语法树，生成render函数 render（codegen）
-  }
-
   var has = {};
   var queue = [];
 
@@ -1139,6 +872,7 @@
     if (typeof tag === 'string') {
       // TODO 组件判断
       if (createComponent(vnode)) {
+        // console.log('el -----------------', vnode.el);
         return vnode.el = vnode.componentInstance.$el;
       }
 
@@ -1155,6 +889,7 @@
   }
 
   function createComponent(vnode) {
+    console.log('component-vnode------------', vnode);
     var d = vnode.data;
     d.hooks && d.hooks.init && d.hooks.init(vnode); // if ((d = d.hooks) && (d = d.init)) {
     //   d(vnode);
@@ -1167,7 +902,7 @@
 
   function updatePrototies(vnode, oldVnode) {
     var newProps = vnode.data || {};
-    var el = vnode.el;
+    var el = vnode.el; // console.log('____', newProps.onClick())
 
     if (oldVnode) {
       var _oldProps$style, _newProps$style;
@@ -1195,6 +930,11 @@
         }
       } else if (_key2 === 'class') {
         el.className = newProps["class"];
+      } else if (_key2.startsWith('on')) {
+        var event = _key2.toLowerCase();
+
+        console.log();
+        el[event] = newProps[_key2];
       } else if (_key2 !== 'undefined') {
         el.setAttribute(_key2, newProps[_key2]);
       }
@@ -1243,67 +983,6 @@
     }
   }
 
-  function initMixin$1(Vue) {
-    Vue.prototype._init = function (options) {
-      //Vue的内部属性#options 用户传递所以参数
-      var vm = this; // console.log(vm.constructor.options, options)
-
-      vm.$options = mergeOptions(vm.constructor.options, options); // console.log('opt', vm.$options)
-
-      callHook(vm, 'beforeCreate');
-      initState(vm); // 初始化状态
-
-      callHook(vm, 'created'); // 通过模板渲染
-
-      if (vm.$options.el) {
-        // 用户提供挂载节点
-        vm.$mount(vm.$options.el);
-      }
-    };
-
-    Vue.prototype.$mount = function (el) {
-      el = document.querySelector(el);
-      var vm = this; // 同时存在template与render使用render，如果没有则使用id=“app”的模板
-      // 将template转换为render函数挂载到opts上
-
-      var opts = this.$options;
-
-      if (!opts.render) {
-        // 如果没有render，则编译模板
-        var template = opts.template; // console.log('opts---', opts);
-
-        if (!template && el) {
-          template = el.outerHTML;
-        } // console.log(template)
-
-
-        var render = compileToFunction(template);
-        opts.render = render;
-      } //  opts.render;
-
-
-      mountComponent(vm, el);
-    };
-
-    Vue.prototype.$nextTick = nextTick;
-
-    Vue.prototype.$watch = function (expOrFn, cb) {
-      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-      var vm = this;
-      options.immediate = options.immediate ? options.immediate : true;
-      options.user = true;
-      var watcher = new Watcher(vm, expOrFn, cb, options);
-
-      if (options.immediate) {
-        try {
-          cb.call(vm, watcher.value);
-        } catch (error) {
-          handleError(error, vm, "callback for immediate watcher \"".concat(watcher.expression, "\""));
-        }
-      }
-    };
-  }
-
   function vnode(tag, data, key, children, text, componentOptions) {
     return {
       tag: tag,
@@ -1345,13 +1024,37 @@
       children[_key - 3] = arguments[_key];
     }
 
+    console.log('create-------', children);
+
     if (isReservedTag(tag)) {
       return vnode(tag, data, key, children, undefined);
     } else {
       var Ctor = vm.$options.components[tag];
+      console.log('createComponent');
       return createComponent$1(vm, tag, data, key, children, Ctor);
     }
-  }
+  } // $createElement("div", {}, $createElement("div", { "onClick": this.handleClick.bind(this) }, $createTextNode(this.name)), $createElement("div", {}, $createTextNode(this.age)))
+  // export function createElement (vm, tag, data, ...children) {
+  //   let { key } = data ? data : { key: undefined };
+  //   if (key) {
+  //     delete data[ key ];
+  //   }
+  //   // children = children || []
+  //   const ch = [];
+  //   children.forEach(child => {
+  //     ch.append(createElement(vm, child));
+  //   })
+  //   console.log('ch: ', ch, tag, vm)
+  //   if (isReservedTag(tag)) {
+  //     return vnode(tag, data, key, ch, undefined);
+  //   } else if (tag == null) {
+  //     return createTextNode(vm, tag);
+  //   } else {
+  //     let Ctor = vm.$options.components[ tag ];
+  //     return createComponent(vm, tag, data, key, children, Ctor);
+  //   }
+  // }
+
   function createTextNode(vm, text) {
     return vnode(undefined, undefined, undefined, undefined, text);
   }
@@ -1376,8 +1079,729 @@
     Vue.prototype._render = function () {
       var vm = this;
       var render = vm.$options.render;
-      var vnode = render.call(vm);
+      console.log(render);
+      var vnode = render.call(vm, vm.$createElement); // console.log('vnode', vnode)
+
       return vnode;
+    };
+  }
+  function initRender(vm) {
+    vm.$createElement = function (tag, data) {
+      for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+        children[_key - 2] = arguments[_key];
+      }
+
+      return createElement.apply(void 0, [vm, tag, data].concat(children));
+    };
+
+    vm.$createTextNode = function (text) {
+      return createTextNode(vm, text);
+    };
+  }
+
+  function oneObject(str) {
+    var obj = {};
+    str.split(",").forEach(function (_) {
+      return obj[_] = true;
+    });
+    return obj;
+  }
+
+  var voidTag = oneObject("area,base,basefont,br,col,frame,hr,img,input,link,meta,param,embed,command,keygen,source,track,wbr");
+  var specalTag = oneObject('xmp,style,script,noscript,textarea,template,#comment');
+  var hiddenTag = oneObject('style,script,noscript,template');
+
+  var JSXParser = function JSXParser(a, f) {
+    if (!(this instanceof JSXParser)) {
+      return _parse(a, f);
+    }
+
+    this.input = a;
+    this.getOne = f;
+  };
+
+  JSXParser.prototype = {
+    parse: function parse() {
+      return _parse(this.input, this.getOne);
+    }
+  };
+  var rsp = /\s/;
+  /**
+   * 
+   * 
+   * @param {any} string 
+   * @param {any} getOne 只返回一个节点
+   * @returns 
+   */
+
+  function _parse(string, getOne) {
+    getOne = getOne === void 666 || getOne === true;
+    var ret = lexer(string, getOne);
+
+    if (getOne) {
+      return typeof ret[0] === 'string' ? ret[1] : ret[0];
+    }
+
+    return ret;
+  }
+
+  function lexer(string, getOne) {
+    var breakIndex = 120;
+    var stack = [];
+    var origString = string;
+    var origLength = string.length;
+
+    stack.last = function () {
+      return stack[stack.length - 1];
+    };
+
+    var ret = [];
+
+    function addNode(node) {
+      var p = stack.last();
+
+      if (p && p.children) {
+        p.children.push(node);
+      } else {
+        ret.push(node);
+      }
+    }
+
+    var lastNode;
+
+    do {
+      if (--breakIndex === 0) {
+        break;
+      }
+
+      var arr = getCloseTag(string);
+
+      if (arr) {
+        //处理关闭标签
+        string = string.replace(arr[0], '');
+
+        var _node = stack.pop(); //处理下面两种特殊情况：
+        //1. option会自动移除元素节点，将它们的nodeValue组成新的文本节点
+        //2. table会将没有被thead, tbody, tfoot包起来的tr或文本节点，收集到一个新的tbody元素中
+
+
+        if (_node.type === 'option') {
+          _node.children = [{
+            type: '#text',
+            nodeValue: getText(_node)
+          }];
+        } else if (_node.type === 'table') {
+          insertTbody(_node.children);
+        }
+
+        lastNode = null;
+
+        if (getOne && ret.length === 1 && !stack.length) {
+          return [origString.slice(0, origLength - string.length), ret[0]];
+        }
+
+        continue;
+      }
+
+      var arr = getOpenTag(string);
+
+      if (arr) {
+        string = string.replace(arr[0], '');
+        var node = arr[1];
+        addNode(node);
+        var selfClose = !!(node.isVoidTag || specalTag[node.type]);
+
+        if (!selfClose) {
+          //放到这里可以添加孩子
+          stack.push(node);
+        }
+
+        if (getOne && selfClose && !stack.length) {
+          return [origString.slice(0, origLength - string.length), node];
+        }
+
+        lastNode = node;
+        continue;
+      }
+
+      var text = '';
+
+      do {
+        //处理<div><<<<<<div>的情况
+        var _index = string.indexOf('<');
+
+        if (_index === 0) {
+          text += string.slice(0, 1);
+          string = string.slice(1);
+        } else {
+          break;
+        }
+      } while (string.length); //处理<div>{aaa}</div>,<div>xxx{aaa}xxx</div>,<div>xxx</div>{aaa}sss的情况
+
+
+      var index = string.indexOf('<'); //判定它后面是否存在标签
+
+      var bindex = string.indexOf('{'); //判定它后面是否存在jsx
+
+      var aindex = string.indexOf('}');
+      var hasJSX = bindex < aindex && (index === -1 || bindex < index);
+
+      if (hasJSX) {
+        if (bindex !== 0) {
+          // 收集jsx之前的文本节点
+          text += string.slice(0, bindex);
+          string = string.slice(bindex);
+        }
+
+        addText(lastNode, text, addNode);
+        string = string.slice(1); //去掉前面{
+
+        var arr = parseCode(string);
+        addNode(makeJSX(arr[1]));
+        lastNode = false;
+        string = string.slice(arr[0].length + 1); //去掉后面的}
+      } else {
+        if (index === -1) {
+          text = string;
+          string = '';
+        } else {
+          text += string.slice(0, index);
+          string = string.slice(index);
+        }
+
+        addText(lastNode, text, addNode);
+      }
+    } while (string.length);
+
+    return ret;
+  }
+
+  function addText(lastNode, text, addNode) {
+    if (/\S/.test(text)) {
+      if (lastNode && lastNode.type === '#text') {
+        lastNode.text += text;
+      } else {
+        lastNode = {
+          type: '#text',
+          nodeValue: text
+        };
+        addNode(lastNode);
+      }
+    }
+  } //它用于解析{}中的内容，如果遇到不匹配的}则返回, 根据标签切割里面的内容 
+
+
+  function parseCode(string) {
+    // <div id={ function(){<div/>} }>
+    var word = '',
+        //用于匹配前面的单词
+    braceIndex = 1,
+        codeIndex = 0,
+        nodes = [],
+        quote,
+        escape = false,
+        state = 'code';
+
+    for (var i = 0, n = string.length; i < n; i++) {
+      var c = string.charAt(i),
+          next = string.charAt(i + 1);
+
+      switch (state) {
+        case 'code':
+          if (c === '"' || c === "'") {
+            state = 'string';
+            quote = c;
+          } else if (c === '{') {
+            braceIndex++;
+          } else if (c === '}') {
+            braceIndex--;
+
+            if (braceIndex === 0) {
+              collectJSX(string, codeIndex, i, nodes);
+              return [string.slice(0, i), nodes];
+            }
+          } else if (c === '<') {
+            var word = '',
+                empty = true,
+                index = i - 1;
+
+            do {
+              c = string.charAt(index);
+
+              if (empty && rsp.test(c)) {
+                continue;
+              }
+
+              if (rsp.test(c)) {
+                break;
+              }
+
+              empty = false;
+              word = c + word;
+
+              if (word.length > 7) {
+                //性能优化
+                break;
+              }
+            } while (--index >= 0);
+
+            var chunkString = string.slice(i);
+
+            if (word === '' || /(=>|return|\{|\(|\[|\,)$/.test(word) && /\<\w/.test(chunkString)) {
+              collectJSX(string, codeIndex, i, nodes);
+              var chunk = lexer(chunkString, true);
+              nodes.push(chunk[1]);
+              i += chunk[0].length - 1; //因为已经包含了<, 需要减1
+
+              codeIndex = i + 1;
+            }
+          }
+
+          break;
+
+        case 'string':
+          if (c == '\\' && (next === '"' || next === "'")) {
+            escape = !escape;
+          } else if (c === quote && !escape) {
+            state = 'code';
+          }
+
+          break;
+      }
+    }
+  }
+
+  function collectJSX(string, codeIndex, i, nodes) {
+    var nodeValue = string.slice(codeIndex, i);
+
+    if (/\S/.test(nodeValue)) {
+      //将{前面的东西放进去
+      nodes.push({
+        type: '#jsx',
+        nodeValue: nodeValue
+      });
+    }
+  }
+
+  var rtbody = /^(tbody|thead|tfoot)$/;
+
+  function insertTbody(nodes) {
+    var tbody = false;
+
+    for (var i = 0, n = nodes.length; i < n; i++) {
+      var node = nodes[i];
+
+      if (rtbody.test(node.nodeName)) {
+        tbody = false;
+        continue;
+      }
+
+      if (node.nodeName === 'tr') {
+        if (tbody) {
+          nodes.splice(i, 1);
+          tbody.children.push(node);
+          n--;
+          i--;
+        } else {
+          tbody = {
+            nodeName: 'tbody',
+            props: {},
+            children: [node]
+          };
+          nodes.splice(i, 1, tbody);
+        }
+      } else {
+        if (tbody) {
+          nodes.splice(i, 1);
+          tbody.children.push(node);
+          n--;
+          i--;
+        }
+      }
+    }
+  }
+
+  function getCloseTag(string) {
+    if (string.indexOf("</") === 0) {
+      var match = string.match(/\<\/(\w+)>/);
+
+      if (match) {
+        var tag = match[1];
+        string = string.slice(3 + tag.length);
+        return [match[0], {
+          type: tag
+        }];
+      }
+    }
+
+    return null;
+  }
+
+  function getOpenTag(string) {
+    if (string.indexOf("<") === 0) {
+      var i = string.indexOf('<!--'); //处理注释节点
+
+      if (i === 0) {
+        var l = string.indexOf('-->');
+
+        if (l === -1) {
+          thow('注释节点没有闭合 ' + string.slice(0, 100));
+        }
+
+        var node = {
+          type: '#comment',
+          nodeValue: string.slice(4, l)
+        };
+        return [string.slice(0, l + 3), node];
+      }
+
+      var match = string.match(/\<(\w[^\s\/\>]*)/); //处理元素节点
+
+      if (match) {
+        var leftContent = match[0],
+            tag = match[1];
+        var node = {
+          type: tag,
+          props: {},
+          children: []
+        };
+        string = string.replace(leftContent, ''); //去掉标签名(rightContent)
+
+        var arr = getAttrs(string); //处理属性
+
+        if (arr) {
+          node.props = arr[1];
+          string = string.replace(arr[0], '');
+          leftContent += arr[0];
+        }
+
+        if (string[0] === '>') {
+          //处理开标签的边界符
+          leftContent += '>';
+          string = string.slice(1);
+
+          if (voidTag[node.type]) {
+            node.isVoidTag = true;
+          }
+        } else if (string.slice(0, 2) === '/>') {
+          //处理开标签的边界符
+          leftContent += '/>';
+          string = string.slice(2);
+          node.isVoidTag = true;
+        }
+
+        if (!node.isVoidTag && specalTag[tag]) {
+          //如果是script, style, xmp等元素
+          var closeTag = '</' + tag + '>';
+          var j = string.indexOf(closeTag);
+          var nodeValue = string.slice(0, j);
+          leftContent += nodeValue + closeTag;
+          node.children.push({
+            type: '#text',
+            nodeValue: nodeValue
+          });
+        }
+
+        return [leftContent, node];
+      }
+    }
+  }
+
+  function getText(node) {
+    var ret = '';
+    node.children.forEach(function (el) {
+      if (el.type === '#text') {
+        ret += el.nodeValue;
+      } else if (el.children && !hiddenTag[el.type]) {
+        ret += getText(el);
+      }
+    });
+    return ret;
+  }
+
+  function getAttrs(string) {
+    var state = 'AttrNameOrJSX',
+        attrName = '',
+        attrValue = '',
+        quote,
+        escape,
+        props = {};
+
+    for (var i = 0, n = string.length; i < n; i++) {
+      var c = string[i];
+
+      switch (state) {
+        case 'AttrNameOrJSX':
+          if (c === '/' || c === '>') {
+            return [string.slice(0, i), props];
+          }
+
+          if (rsp.test(c)) {
+            if (attrName) {
+              state = 'AttrEqual';
+            }
+          } else if (c === '=') {
+            if (!attrName) {
+              throw '必须指定属性名';
+            }
+
+            state = 'AttrQuoteOrJSX';
+          } else if (c === '{') {
+            state = 'SpreadJSX';
+          } else {
+            attrName += c;
+          }
+
+          break;
+
+        case 'AttrEqual':
+          if (c === '=') {
+            state = 'AttrQuoteOrJSX';
+          }
+
+          break;
+
+        case 'AttrQuoteOrJSX':
+          if (c === '"' || c === "'") {
+            quote = c;
+            state = 'AttrValue';
+            escape = false;
+          } else if (c === '{') {
+            state = 'JSX';
+          }
+
+          break;
+
+        case 'AttrValue':
+          if (c === '\\') {
+            escape = !escape;
+          }
+
+          if (c !== quote) {
+            attrValue += c;
+          } else if (c === quote && !escape) {
+            props[attrName] = attrValue;
+            attrName = attrValue = '';
+            state = 'AttrNameOrJSX';
+          }
+
+          break;
+
+        case 'SpreadJSX':
+          i += 3;
+
+        case 'JSX':
+          var arr = parseCode(string.slice(i));
+          i += arr[0].length;
+          props[state === 'SpreadJSX' ? 'spreadAttribute' : attrName] = makeJSX(arr[1]);
+          attrName = attrValue = '';
+          state = 'AttrNameOrJSX';
+          break;
+      }
+    }
+
+    throw '必须关闭标签';
+  }
+
+  function makeJSX(JSXNode) {
+    return JSXNode.length === 1 && JSXNode[0].type === '#jsx' ? JSXNode[0] : {
+      type: '#jsx',
+      nodeValue: JSXNode
+    };
+  }
+
+  // //单例HTML标签,多例自定义标签
+  var rComponent = /^(this|[A-Z])/;
+  var cacheStr = {};
+  function evalJSX(str, obj, config) {
+    var jsx = new innerClass(str, config);
+    var output = jsx.init();
+    return output; // console.log(output);
+    // if (!obj)
+    //     obj = {}
+    // if (typeof anu === 'function')
+    //     obj.anu = anu
+    // var args = 'var args0 = arguments[0];'
+    // for (var i in obj) {
+    //     if (i !== 'this')
+    //         args += 'var ' + i + ' = args0["' + i + '"];'
+    // }
+    // args += 'return ' + output
+    // try {
+    //     var fn
+    //     if (cacheFns[ args ]) {
+    //         fn = cacheFns[ args ]
+    //     } else {
+    //         fn = cacheFns[ args ] = Function(args)
+    //     }
+    //     console.log(fn)
+    //     var a = fn.call(obj.this, obj)
+    //     return a
+    // } catch (e) {
+    //     console.log(e, args)
+    // }
+  }
+
+  function innerClass(str, config) {
+    config = config || {};
+    config.ns = evalJSX.globalNs || config.ns || '';
+    this.input = str;
+    this.ns = config.ns;
+    this.type = config.type;
+  }
+
+  innerClass.prototype = {
+    init: function init() {
+      if (typeof JSXParser === 'function') {
+        var useCache = this.input.length < 720;
+
+        if (useCache && cacheStr[this.input]) {
+          return cacheStr[this.input];
+        }
+
+        var array = new JSXParser(this.input).parse();
+        var evalString = this.genChildren([array]);
+
+        if (useCache) {
+          return cacheStr[this.input] = evalString;
+        }
+
+        return evalString;
+      } else {
+        throw 'need JSXParser https://github.com/RubyLouvre/jsx-parser';
+      }
+    },
+    genTag: function genTag(el) {
+      var children = this.genChildren(el.children, el);
+      var ns = this.ns;
+      var type = rComponent.test(el.type) ? el.type : JSON.stringify(el.type);
+      return ns + '$createElement(' + type + ',' + this.genProps(el.props, el) + ',' + children + ')';
+    },
+    genProps: function genProps(props, el) {
+      if (!props && !el.spreadAttribute) {
+        return 'null';
+      }
+
+      var ret = '{';
+
+      for (var i in props) {
+        ret += JSON.stringify(i) + ':' + this.genPropValue(props[i]) + ',\n';
+      }
+
+      ret = ret.replace(/\,\n$/, '') + '}';
+
+      if (el.spreadAttribute) {
+        return 'Object.assign({},' + el.spreadAttribute + ',' + ret + ')';
+      }
+
+      return ret;
+    },
+    genPropValue: function genPropValue(val) {
+      if (typeof val === 'string') {
+        return JSON.stringify(val);
+      }
+
+      if (val) {
+        if (Array.isArray(val.nodeValue)) {
+          return this.genChildren(val.nodeValue);
+        }
+
+        if (val) {
+          return val.nodeValue;
+        }
+      }
+    },
+    genChildren: function genChildren(children, obj, join) {
+      // debugger
+      if (obj) {
+        if (obj.isVoidTag || !obj.children.length) {
+          return 'null';
+        }
+      }
+
+      var ret = [];
+
+      for (var i = 0, el; el = children[i++];) {
+        if (el.type === '#jsx') {
+          if (Array.isArray(el.nodeValue)) {
+            ret[ret.length] = this.genChildren(el.nodeValue, null, ' ');
+          } else {
+            ret[ret.length] = "$createTextNode(".concat(el.nodeValue, ")");
+          }
+        } else if (el.type === '#text') {
+          ret[ret.length] = JSON.stringify(el.nodeValue);
+        } else if (el) {
+          ret[ret.length] = this.genTag(el);
+        }
+      }
+
+      console.log('ret', ret);
+      return ret.join(join || ',');
+    }
+  }; // return evalJSX;
+  // }
+  // });
+
+  function initMixin$1(Vue) {
+    Vue.prototype._init = function (options) {
+      //Vue的内部属性#options 用户传递所以参数
+      var vm = this; // console.log(vm.constructor.options, options)
+
+      vm.$options = mergeOptions(vm.constructor.options, options); // console.log('opt', vm.$options)
+
+      callHook(vm, 'beforeCreate');
+      initRender(vm);
+      initState(vm); // 初始化状态
+
+      callHook(vm, 'created'); // 通过模板渲染
+
+      if (vm.$options.el) {
+        // 用户提供挂载节点
+        vm.$mount(vm.$options.el);
+      }
+    };
+
+    Vue.prototype.$mount = function (el) {
+      el = document.querySelector(el);
+      var vm = this; // 同时存在template与render使用render，如果没有则使用id=“app”的模板
+      // 将template转换为render函数挂载到opts上
+
+      var opts = this.$options;
+
+      if (!opts.render) {
+        // 如果没有render，则编译模板
+        var template = opts.template; // console.log('opts---', opts);
+
+        if (!template && el) {
+          template = el.outerHTML;
+        } // const render = compileToFunction(template);
+
+
+        console.log(this.createElement);
+        var render = new Function("with(this){return ".concat(evalJSX(template), "}"));
+        opts.render = render;
+      } //  opts.render;
+
+
+      mountComponent(vm, el);
+    };
+
+    Vue.prototype.$nextTick = nextTick;
+
+    Vue.prototype.$watch = function (expOrFn, cb) {
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+      var vm = this;
+      options.immediate = options.immediate ? options.immediate : true;
+      options.user = true;
+      var watcher = new Watcher(vm, expOrFn, cb, options);
+
+      if (options.immediate) {
+        try {
+          cb.call(vm, watcher.value);
+        } catch (error) {
+          handleError(error, vm, "callback for immediate watcher \"".concat(watcher.expression, "\""));
+        }
+      }
     };
   }
 
