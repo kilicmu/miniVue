@@ -8,12 +8,10 @@ export function createElement (vm, tag, data, ...children) {
   if (key) {
     delete data[ key ];
   }
-  console.log('create-------', children);
   if (isReservedTag(tag)) {
     return vnode(tag, data, key, children, undefined);
   } else {
     let Ctor = vm.$options.components[ tag ];
-    console.log('createComponent')
     return createComponent(vm, tag, data, key, children, Ctor);
   }
 

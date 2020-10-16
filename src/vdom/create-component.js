@@ -8,10 +8,11 @@ export function createComponent (vm, tag, data, key, children, Ctor) {
 
   data.hooks = {
     init (vnode) {
-      const child = vnode.componentInstance = new Ctor({ _isComponent: true })
+      const child = vnode.componentInstance = new Ctor({ _vnode: vnode, propsData: vnode.data, _isComponent: true })
       child.$mount();
     },
 
   }
+  console.log('data: =====', data)
   return vnode(`vue-component-${Ctor.cid}-${tag}`, data, key, undefined, undefined, { Ctor, children });
 }

@@ -488,118 +488,6 @@
     return new Observer(data);
   }
 
-  function initState(vm) {
-    var opts = vm.$options;
-    console.log(opts);
-
-    if (opts.props) {
-      initProps(vm, opts.props);
-    }
-
-    if (opts.data) {
-      initData(vm);
-    }
-
-    if (opts.methods) {
-      initMethods(vm, opts.methods);
-    } // compouted
-    // watch
-
-
-    if (opts.watch) {
-      initWatch(vm, opts.watch);
-    }
-  }
-
-  function initData(vm) {
-    var data = vm.$options.data;
-    data = vm._data = typeof data === 'function' ? data.call(vm) : data; // 对数据进行观测
-
-    for (var key in data) {
-      proxy(vm, '_data', key);
-    }
-
-    observe(data);
-  }
-
-  function initProps(vm, propsOptions) {
-    var propsData = vm.$options.propsData;
-    var props = vm._props = {};
-    var keys = vm.$props._propKeys = [];
-
-    for (var key in propsOptions) {
-      keys.push(key);
-      var value = props.value;
-      defineReactive(props, key, value);
-
-      if (!(key in vm)) {
-        proxy(vm, "_props", key);
-      }
-    }
-  }
-
-  function initMethods(vm, methods) {
-    var porps = vm.$options.props;
-
-    for (var key in methods) {
-      vm[key] = typeof methods[key] !== 'function' ? function () {} : methods[key].bind(vm);
-    }
-  }
-
-  function initWatch(vm, watch) {
-    for (var key in watch) {
-      var handler = watch[key];
-
-      if (Array.isArray[handler]) {
-        var _iterator = _createForOfIteratorHelper(handler),
-            _step;
-
-        try {
-          for (_iterator.s(); !(_step = _iterator.n()).done;) {
-            var h = _step.value;
-            createWatcher(vm, key, h);
-          }
-        } catch (err) {
-          _iterator.e(err);
-        } finally {
-          _iterator.f();
-        }
-      } else {
-        createWatcher(vm, key, handler);
-      }
-    }
-  }
-
-  function createWatcher(vm, expOrFn, handler, options) {
-    if (_typeof(handler) === 'object') {
-      options = handler;
-      handler = options.handler;
-    }
-
-    if (typeof handler === 'string') {
-      handler = vm[handler];
-    }
-
-    return vm.$watch(expOrFn, handler, options);
-  }
-
-  function stateMixin(Vue) {
-    var dataDef = {};
-
-    dataDef.get = function () {
-      return this._data;
-    };
-
-    var propsDef = {};
-
-    propsDef.get = function () {
-      return this._props;
-    };
-
-    Object.defineProperty(Vue.prototype, '$data', dataDef);
-    Object.defineProperty(Vue.prototype, '$props', propsDef);
-  }
-
   var has = {};
   var queue = [];
 
@@ -637,11 +525,13 @@
       this.options = options;
       this.user = options.user; // 判断是否是$watch创造的 watcher
 
-      console.log(this.user);
+      this.value = null;
+      this.lazy = options.lazy;
+      this.dirty = this.lazy;
 
       if (typeof exprOrFn === "string") {
         this.getter = function () {
-          var path = exprOrFn.split('.');
+          var path = exprOrFn.split(".");
           var obj = vm;
 
           var _iterator = _createForOfIteratorHelper(path),
@@ -664,17 +554,24 @@
         this.getter = exprOrFn;
       }
 
-      this.value = this.get();
+      this.value = this.lazy ? undefined : this.get();
     }
 
     _createClass(Watcher, [{
       key: "get",
       value: function get() {
         var vm = this.vm;
+        var value = undefined;
         pushTarget(this);
-        var value = this.getter.call(vm);
+        value = this.getter.call(vm);
         popTarget();
         return value;
+      }
+    }, {
+      key: "evaluate",
+      value: function evaluate() {
+        this.value = this.get();
+        this.dirty = false;
       }
     }, {
       key: "addDep",
@@ -685,7 +582,11 @@
     }, {
       key: "update",
       value: function update() {
-        queueWatcher(this);
+        if (this.lazy) {
+          this.dirty = true;
+        } else {
+          queueWatcher(this);
+        }
       }
     }, {
       key: "run",
@@ -703,6 +604,186 @@
 
     return Watcher;
   }();
+
+  function initState(vm) {
+    var opts = vm.$options;
+    console.log(opts);
+
+    if (opts.props) {
+      console.log('props: =----', opts.props);
+      initProps(vm, opts.props);
+    }
+
+    if (opts.data) {
+      initData(vm);
+    }
+
+    if (opts.methods) {
+      initMethods(vm, opts.methods);
+    } // compouted
+    // watch
+
+
+    if (opts.watch) {
+      initWatch(vm, opts.watch);
+    }
+
+    if (opts.computed) {
+      initComputed(vm, opts.computed);
+    }
+  }
+
+  function initComputed(vm, computed) {
+    var watchers = vm._computedWatchers = Object.create(null);
+
+    for (var key in computed) {
+      var userDef = computed[key];
+      var getter = typeof userDef === "function" ? userDef : userDef.get;
+      watchers[key] = new Watcher(vm, getter, function () {}, {
+        lazy: true
+      });
+
+      if (!(key in vm)) {
+        defineComputed(vm, key, userDef);
+      }
+    }
+  }
+
+  var sharedPropertyDefinition = {
+    enumerable: true,
+    configurable: true,
+    get: function get() {},
+    set: function set() {}
+  };
+
+  function defineComputed(target, key, userDef) {
+    if (typeof userDef === "function") {
+      sharedPropertyDefinition.get = createComputedGetter(key);
+
+      sharedPropertyDefinition.set = function () {};
+    } else {
+      sharedPropertyDefinition.get = userDef.get ? userDef.get : createComputedGetter(key);
+      sharedPropertyDefinition.set = userDef.set ? userDef.set : function () {};
+    }
+
+    Object.defineProperty(target, key, sharedPropertyDefinition);
+  }
+
+  function createComputedGetter(key) {
+    return function computedGetter() {
+      var watcher = this._computedWatchers && this._computedWatchers[key];
+
+      if (watcher) {
+        if (watcher.dirty) {
+          watcher.evaluate();
+        } // if (Dep.target) {
+        //   watcher.depend();
+        // }
+
+
+        return watcher.value;
+      }
+    };
+  }
+
+  function initData(vm) {
+    var data = vm.$options.data;
+    data = vm._data = typeof data === "function" ? data.call(vm) : data; // 对数据进行观测
+
+    for (var key in data) {
+      proxy(vm, "_data", key);
+    }
+
+    observe(data);
+  }
+
+  function initProps(vm, propsOptions) {
+    var propsData = vm.$options.propsData;
+    var props = vm._props = {};
+    var keys = vm.$props._propKeys = [];
+
+    var _iterator = _createForOfIteratorHelper(propsOptions),
+        _step;
+
+    try {
+      for (_iterator.s(); !(_step = _iterator.n()).done;) {
+        var key = _step.value;
+        keys.push(key);
+        var value = propsData[key];
+        defineReactive(props, key, value);
+
+        if (!(key in vm)) {
+          proxy(vm, "_props", key);
+        }
+      }
+    } catch (err) {
+      _iterator.e(err);
+    } finally {
+      _iterator.f();
+    }
+  }
+
+  function initMethods(vm, methods) {
+    var porps = vm.$options.props;
+
+    for (var key in methods) {
+      vm[key] = typeof methods[key] !== "function" ? function () {} : methods[key].bind(vm);
+    }
+  }
+
+  function initWatch(vm, watch) {
+    for (var key in watch) {
+      var handler = watch[key];
+
+      if (Array.isArray[handler]) {
+        var _iterator2 = _createForOfIteratorHelper(handler),
+            _step2;
+
+        try {
+          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+            var h = _step2.value;
+            createWatcher(vm, key, h);
+          }
+        } catch (err) {
+          _iterator2.e(err);
+        } finally {
+          _iterator2.f();
+        }
+      } else {
+        createWatcher(vm, key, handler);
+      }
+    }
+  }
+
+  function createWatcher(vm, expOrFn, handler, options) {
+    if (_typeof(handler) === "object") {
+      options = handler;
+      handler = options.handler;
+    }
+
+    if (typeof handler === "string") {
+      handler = vm[handler];
+    }
+
+    return vm.$watch(expOrFn, handler, options);
+  }
+
+  function stateMixin(Vue) {
+    var dataDef = {};
+
+    dataDef.get = function () {
+      return this._data;
+    };
+
+    var propsDef = {};
+
+    propsDef.get = function () {
+      return this._props;
+    };
+
+    Object.defineProperty(Vue.prototype, "$data", dataDef);
+    Object.defineProperty(Vue.prototype, "$props", propsDef);
+  }
 
   function sameVnode(a, b) {
     return a.key === b.key && a.tag === b.tag;
@@ -889,7 +970,6 @@
   }
 
   function createComponent(vnode) {
-    console.log('component-vnode------------', vnode);
     var d = vnode.data;
     d.hooks && d.hooks.init && d.hooks.init(vnode); // if ((d = d.hooks) && (d = d.init)) {
     //   d(vnode);
@@ -1002,11 +1082,14 @@
     data.hooks = {
       init: function init(vnode) {
         var child = vnode.componentInstance = new Ctor({
+          _vnode: vnode,
+          propsData: vnode.data,
           _isComponent: true
         });
         child.$mount();
       }
     };
+    console.log('data: =====', data);
     return vnode("vue-component-".concat(Ctor.cid, "-").concat(tag), data, key, undefined, undefined, {
       Ctor: Ctor,
       children: children
@@ -1024,13 +1107,10 @@
       children[_key - 3] = arguments[_key];
     }
 
-    console.log('create-------', children);
-
     if (isReservedTag(tag)) {
       return vnode(tag, data, key, children, undefined);
     } else {
       var Ctor = vm.$options.components[tag];
-      console.log('createComponent');
       return createComponent$1(vm, tag, data, key, children, Ctor);
     }
   } // $createElement("div", {}, $createElement("div", { "onClick": this.handleClick.bind(this) }, $createTextNode(this.name)), $createElement("div", {}, $createTextNode(this.age)))
@@ -1079,9 +1159,7 @@
     Vue.prototype._render = function () {
       var vm = this;
       var render = vm.$options.render;
-      console.log(render);
-      var vnode = render.call(vm, vm.$createElement); // console.log('vnode', vnode)
-
+      var vnode = render.call(vm, vm.$createElement);
       return vnode;
     };
   }
@@ -1749,6 +1827,7 @@
 
       vm.$options = mergeOptions(vm.constructor.options, options); // console.log('opt', vm.$options)
 
+      console.log('options: -------', vm.$options);
       callHook(vm, 'beforeCreate');
       initRender(vm);
       initState(vm); // 初始化状态

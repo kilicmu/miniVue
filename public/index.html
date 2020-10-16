@@ -12,6 +12,7 @@
   <script src="../dist/vue.js"></script>
   <script>
     const vm = new Vue({
+
       data() {
         return {
           name: 'kilic',
@@ -20,6 +21,7 @@
       },
       components: {
         component1: {
+          props: [ 'age' ],
           data() {
             return {
               name: '这是组件1',
@@ -28,14 +30,15 @@
           },
           template: `
             <div>
-              <span>{this.name}</span>  
+              <div>{this.name}</div>  
               <p>{this.meta}</p>
+              <div>{this.age}</div>
             </div>
-            
           `,
           methods: {
             updateName(name) {
               this.name = name;
+              console.log('-------------------', this.age);
             }
           },
           beforeCreate() {
@@ -51,9 +54,9 @@
           },
 
           mounted() {
-            // setTimeout(() => {
-            //   this.updateName('这是组件1(updated)');
-            // }, 6000)
+            setTimeout(() => {
+              this.updateName('这是组件1(updated)');
+            }, 6000)
             console.log('子组件挂载后：', this);
           },
 
@@ -77,7 +80,7 @@
       <div>
         <span onClick={this.handleClick.bind(this)}>{this.name}</span>
         <p>{this.age}</p>
-        <component1></conponent>
+        <component1 age={this.age}></conponent>
       </div>
       `,
       // render(){
@@ -113,7 +116,7 @@
           this.name = name;
         },
         handleClick() {
-          console.log('click');
+          this.age = 14;
         }
       },
       watch: {

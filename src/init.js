@@ -16,6 +16,7 @@ export function initMixin (Vue) {
     // console.log(vm.constructor.options, options)
     vm.$options = mergeOptions(vm.constructor.options, options);
     // console.log('opt', vm.$options)
+    console.log('options: -------', vm.$options);
     callHook(vm, 'beforeCreate');
     initRender(vm);
     initState(vm); // 初始化状态
@@ -51,6 +52,7 @@ export function initMixin (Vue) {
   }
 
   Vue.prototype.$nextTick = nextTick;
+
   Vue.prototype.$watch = function (expOrFn, cb, options = {}) {
     const vm = this;
     options.immediate = options.immediate ? options.immediate : true;
